@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Potion Master's Quest — v7</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=IM+Fell+English:ital@0;1&display=swap');
+
+:root {
+  --gold:#c9a84c; --parchment:#f4e4bc; --green:#00ff88;
+  --red:#ff4444; --blue:#5aadff; --silver:#c0c0c0;
+  --panel-bg:rgba(8,4,22,0.93);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#050510;color:var(--parchment);font-family:'IM Fell English',serif;height:100vh;overflow:hidden;}
+#stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle var(--d,3s) infinite alternate;animation-delay:var(--dl,0s);}
+@keyframes twinkle{from{opacity:.15;transform:scale(.7);}to{opacity:1;transform:scale(1.3);}}
+#game-container{position:relative;z-index:1;width:100vw;height:100vh;}
+
+/* ── BUTTONS ── */
+.btn{background:linear-gradient(135deg,#1a0a00,#3a1a00);border:2px solid var(--gold);color:var(--gold);
+  font-family:'Cinzel',serif;font-size:1rem;padding:.75rem 2.2rem;cursor:pointer;border-radius:5px;
+  letter-spacing:2px;text-transform:uppercase;transition:all .3s;}
+.btn:hover{background:linear-gradient(135deg,#2a1500,#5a2500);box-shadow:0 0 24px rgba(201,168,76,.5);transform:translateY(-2px);}
+.btn:active{transform:translateY(0);}
+
+/* ── KEYFRAMES ── */
+@keyframes glow{from{text-shadow:0 0 20px rgba(201,168,76,.6),0 0 40px rgba(201,168,76,.3);}to{text-shadow:0 0 50px rgba(201,168,76,1),0 0 100px rgba(201,168,76,.6);}}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-16px) rotate(3deg);}}
+@keyframes floatSprite{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+@keyframes popIn{from{transform:scale(.5) rotate(-6deg);opacity:0;}to{transform:scale(1) rotate(0deg);opacity:1;}}
+@keyframes correctPop{0%{transform:scale(.6);}60%{transform:scale(1.15);}100%{transform:scale(1);}}
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+@keyframes pulseSlot{from{box-shadow:0 0 8px rgba(201,168,76,.3);}to{box-shadow:0 0 22px rgba(201,168,76,.8);}}
+@keyframes pulsePick{from{box-shadow:0 0 10px rgba(201,168,76,.4),inset 0 0 8px rgba(201,168,76,.08);}to{box-shadow:0 0 26px rgba(201,168,76,.9),inset 0 0 14px rgba(201,168,76,.15);}}
+@keyframes bounce{from{transform:translateY(0) scale(1);}to{transform:translateY(-10px) scale(1.1);}}
+@keyframes bub{0%{transform:translateY(0) scale(1);opacity:.6;}100%{transform:translateY(-44px) scale(.3);opacity:0;}}
+@keyframes steam{0%{transform:translateX(0) translateY(0) scale(.4);opacity:.5;}100%{transform:translateX(var(--sx,0px)) translateY(-45px) scale(1.5);opacity:0;}}
+@keyframes pfly{0%{transform:translate(0,0) scale(1);opacity:1;}100%{transform:translate(var(--px,40px),var(--py,-100px)) scale(0);opacity:0;}}
+@keyframes badgePop{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}
+@keyframes flashHit{0%,100%{filter:none;}35%{filter:brightness(5) saturate(0) hue-rotate(0deg);}}
+@keyframes flashSuccess{0%,100%{filter:none;}35%{filter:brightness(3) saturate(3) hue-rotate(80deg);}}
+@keyframes voldReveal{0%{transform:scale(.4) rotate(-15deg);opacity:0;}100%{transform:scale(1) rotate(0deg);opacity:1;}}
+@keyframes roundWinBadge{0%{transform:translate(-50%,-50%) scale(0);opacity:1;}60%{transform:translate(-50%,-50%) scale(1.3);opacity:1;}100%{transform:translate(-50%,-60%) scale(1.1);opacity:0;}}
+
+/* ─────────────────────── DEV TOGGLE ─────────────────────── */
+#dev-toggle-wrap{
+  position:absolute; bottom:1.2rem; right:1.2rem;
+  display:flex; align-items:center; gap:.55rem;
+  background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.12);
+  border-radius:30px; padding:.35rem .8rem;
+  cursor:pointer; user-select:none; transition:border-color .3s;
+  z-index:10;
+}
+#dev-toggle-wrap:hover{ border-color:rgba(201,168,76,.5); }
+#dev-toggle-wrap.on{ border-color:rgba(0,255,136,.55); background:rgba(0,40,15,.6); }
+.dev-toggle-label{
+  font-family:'Cinzel',serif; font-size:.6rem; letter-spacing:.8px;
+  color:rgba(255,255,255,.45); text-transform:uppercase; transition:color .3s;
+}
+#dev-toggle-wrap.on .dev-toggle-label{ color:var(--green); }
+/* pill switch */
+.toggle-pill{
+  width:34px; height:18px; border-radius:9px;
+  background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2);
+  position:relative; transition:background .3s, border-color .3s; flex-shrink:0;
+}
+#dev-toggle-wrap.on .toggle-pill{
+  background:rgba(0,255,136,.25); border-color:var(--green);
+}
+.toggle-knob{
+  position:absolute; top:2px; left:2px;
+  width:12px; height:12px; border-radius:50%;
+  background:rgba(255,255,255,.45); transition:all .25s; 
+}
+#dev-toggle-wrap.on .toggle-knob{
+  left:18px; background:var(--green); box-shadow:0 0 6px rgba(0,255,136,.8);
+}
+.dev-badge{
+  font-family:'Cinzel',serif; font-size:.48rem; padding:.08rem .4rem;
+  border-radius:4px; background:rgba(255,140,0,.2); color:#ffaa44;
+  border:1px solid rgba(255,140,0,.3); letter-spacing:.5px;
+}
+#dev-toggle-wrap.on .dev-badge{
+  background:rgba(0,255,136,.15); color:var(--green); border-color:rgba(0,255,136,.35);
+}
+
+/* ─────────────────────── TITLE ─────────────────────── */
+#title-screen{position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at center,rgba(18,0,38,.97),rgba(5,5,16,.99));}
+.title-logo{font-family:'Cinzel',serif;font-size:clamp(2rem,5vw,3.8rem);font-weight:900;color:var(--gold);text-align:center;
+  line-height:1.2;animation:glow 2.5s ease-in-out infinite alternate;margin-bottom:.4rem;}
+.title-sub{font-style:italic;color:var(--silver);font-size:1.1rem;opacity:.8;margin-bottom:1.5rem;}
+.wizard-big{font-size:5rem;animation:float 3s ease-in-out infinite;filter:drop-shadow(0 0 20px rgba(0,200,100,.6));margin-bottom:1.2rem;}
+.title-instructions{max-width:480px;text-align:center;font-style:italic;color:rgba(255,255,255,.55);font-size:.83rem;line-height:1.8;margin-bottom:2rem;}
+
+/* ─────────────────────── MAIN GAME ─────────────────────── */
+#main-game{display:none;width:100%;height:100%;flex-direction:column;}
+.game-header{display:flex;align-items:center;justify-content:space-between;padding:.45rem 1rem;
+  background:linear-gradient(to bottom,rgba(0,0,0,.85),transparent);border-bottom:1px solid rgba(201,168,76,.25);flex-shrink:0;}
+.game-title{font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);text-shadow:0 0 10px rgba(201,168,76,.5);}
+.phase-badge{font-family:'Cinzel',serif;font-size:.7rem;padding:.2rem .7rem;border-radius:20px;border:1px solid;letter-spacing:1px;}
+.phase-easy{border-color:var(--green);color:var(--green);background:rgba(0,255,136,.08);}
+.phase-medium{border-color:var(--blue);color:var(--blue);background:rgba(90,173,255,.08);}
+.phase-hard{border-color:var(--red);color:var(--red);background:rgba(255,68,68,.08);}
+#battle-btn{background:rgba(100,0,0,.3);border:1px solid rgba(255,68,68,.3);color:#cc7777;font-family:'Cinzel',serif;
+  font-size:.7rem;padding:.3rem .9rem;cursor:default;border-radius:4px;transition:all .3s;letter-spacing:1px;opacity:.4;}
+#battle-btn.ready{opacity:1;cursor:pointer;border-color:#ff4444;color:#ff9999;}
+#battle-btn.ready:hover{background:rgba(150,0,0,.5);box-shadow:0 0 12px rgba(255,0,0,.4);}
+.game-body{flex:1;display:grid;grid-template-columns:200px 1fr 210px;overflow:hidden;min-height:0;}
+.panel{background:var(--panel-bg);padding:.7rem;overflow-y:auto;display:flex;flex-direction:column;gap:.5rem;}
+.left-panel{border-right:1px solid rgba(201,168,76,.18);}
+.right-panel{border-left:1px solid rgba(201,168,76,.18);}
+.panel-title{font-family:'Cinzel',serif;font-size:.78rem;color:var(--gold);text-align:center;padding-bottom:.45rem;
+  border-bottom:1px solid rgba(201,168,76,.25);letter-spacing:1px;flex-shrink:0;}
+.ing-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.4rem;}
+.ing-tile{display:flex;flex-direction:column;align-items:center;gap:.2rem;padding:.4rem .2rem;border-radius:7px;
+  cursor:pointer;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);transition:all .18s;user-select:none;position:relative;}
+.ing-tile:hover{background:rgba(255,255,255,.08);border-color:rgba(201,168,76,.5);transform:scale(1.05);}
+.ing-tile:active{transform:scale(.94);}
+.ing-icon{font-size:1.5rem;display:block;}
+.ing-label{font-size:.52rem;text-align:center;color:var(--silver);line-height:1.2;}
+.ing-seq-badge{position:absolute;top:3px;right:4px;background:var(--gold);color:#000;font-family:'Cinzel',serif;
+  font-size:.48rem;font-weight:700;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;
+  justify-content:center;box-shadow:0 0 6px rgba(201,168,76,.8);animation:badgePop .25s cubic-bezier(.175,.885,.32,1.275);}
+.ing-seq-badge.multi{width:auto;border-radius:7px;padding:0 3px;font-size:.42rem;}
+.center-area{display:flex;flex-direction:column;align-items:center;padding:.6rem .8rem;gap:.4rem;overflow:hidden;}
+.spell-grid-label{font-family:'Cinzel',serif;font-size:.8rem;color:var(--gold);letter-spacing:1px;text-align:center;}
+.spell-grid-sub{font-size:.63rem;color:rgba(255,255,255,.4);font-style:italic;text-align:center;}
+.sequence-grid{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;justify-content:center;margin:.2rem 0;}
+.grid-cell{width:60px;height:60px;border-radius:10px;border:2px dashed rgba(255,255,255,.18);background:rgba(0,0,0,.3);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.12rem;position:relative;transition:all .25s;flex-shrink:0;}
+.cell-num{position:absolute;top:3px;left:5px;font-size:.48rem;color:rgba(255,255,255,.28);font-family:'Cinzel',serif;}
+.grid-cell.active-slot{border:2px solid rgba(201,168,76,.85);box-shadow:0 0 14px rgba(201,168,76,.4),inset 0 0 10px rgba(201,168,76,.08);animation:pulseSlot 1.2s ease-in-out infinite alternate;}
+.grid-cell.correct{border:2px solid var(--green)!important;background:rgba(0,255,136,.12)!important;box-shadow:0 0 16px rgba(0,255,136,.4)!important;animation:correctPop .35s cubic-bezier(.175,.885,.32,1.275);}
+.grid-cell.wrong{border:2px solid var(--red)!important;background:rgba(255,68,68,.15)!important;box-shadow:0 0 16px rgba(255,68,68,.5)!important;animation:shake .4s ease;}
+.grid-cell.future{border:2px dashed rgba(255,255,255,.1);opacity:.55;}
+.cell-arrow{color:rgba(201,168,76,.45);font-size:.85rem;flex-shrink:0;}
+.cell-name-lbl{font-size:.4rem;color:rgba(255,255,255,.5);text-align:center;line-height:1.1;max-width:56px;}
+.phase-dots{display:flex;gap:.45rem;align-items:center;justify-content:center;flex-wrap:wrap;}
+.phase-dot{width:10px;height:10px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);transition:all .4s;}
+.phase-dot.done{background:var(--green);border-color:var(--green);box-shadow:0 0 6px rgba(0,255,136,.6);}
+.phase-dot.current{background:var(--gold);border-color:var(--gold);animation:pulseSlot 1s infinite alternate;}
+.hint-box{font-size:.67rem;color:rgba(255,255,255,.45);font-style:italic;text-align:center;max-width:340px;line-height:1.55;
+  background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .8rem;}
+.cauldron-area{position:relative;display:flex;flex-direction:column;align-items:center;}
+.cauldron-svg{width:min(185px,26vw);height:auto;}
+.brew-liquid{position:absolute;width:min(138px,19vw);height:min(44px,6vw);border-radius:50%;
+  bottom:calc(min(185px,26vw)*.22);transition:background 1s ease,box-shadow 1s ease;background:rgba(0,50,20,.6);overflow:hidden;}
+.brew-bubble{position:absolute;border-radius:50%;background:rgba(255,255,255,.25);animation:bub var(--bd,2s) ease-in infinite;animation-delay:var(--bdl,0s);}
+.steam-wrap{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);width:min(110px,16vw);height:45px;pointer-events:none;}
+.steam-puff{position:absolute;border-radius:50%;background:rgba(255,255,255,.07);animation:steam var(--sd,2s) ease-out infinite;animation-delay:var(--sdl,0s);bottom:0;}
+.spell-slot{border-radius:7px;padding:.5rem .55rem;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.025);transition:all .3s;}
+.spell-slot.easy{border-left:3px solid rgba(0,255,136,.5);}
+.spell-slot.medium{border-left:3px solid rgba(90,173,255,.5);}
+.spell-slot.hard{border-left:3px solid rgba(255,68,68,.5);}
+.spell-slot.unlocked{border-color:var(--gold);background:rgba(201,168,76,.07);cursor:pointer;}
+.spell-slot.unlocked:hover{background:rgba(201,168,76,.14);box-shadow:0 0 10px rgba(201,168,76,.2);}
+.spell-diff{font-size:.48rem;padding:.1rem .35rem;border-radius:3px;display:inline-block;margin-bottom:.2rem;letter-spacing:.5px;}
+.easy .spell-diff{background:rgba(0,255,136,.15);color:var(--green);}
+.medium .spell-diff{background:rgba(90,173,255,.15);color:var(--blue);}
+.hard .spell-diff{background:rgba(255,68,68,.15);color:var(--red);}
+.spell-name{font-family:'Cinzel',serif;font-size:.68rem;color:var(--gold);margin-bottom:.2rem;}
+.spell-locked{font-size:.58rem;color:rgba(255,255,255,.28);font-style:italic;}
+.spell-seq{display:flex;gap:.15rem;flex-wrap:wrap;margin:.2rem 0 .05rem;}
+
+/* ─────────────────────── BREW OVERLAY ─────────────────────── */
+#effect-overlay{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;}
+#effect-overlay.active{display:flex;}
+.eff-bg{position:absolute;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(5px);}
+.eff-card{position:relative;background:linear-gradient(135deg,#08021a,#120528);border:2px solid var(--gold);
+  border-radius:14px;padding:1.8rem 2.2rem;max-width:400px;width:92%;text-align:center;
+  animation:popIn .4s cubic-bezier(.175,.885,.32,1.275);box-shadow:0 0 60px rgba(201,168,76,.3);}
+.eff-card.success{border-color:#00ff88;box-shadow:0 0 60px rgba(0,255,136,.35);}
+.eff-card.fail{border-color:#ff4444;box-shadow:0 0 60px rgba(255,68,68,.35);}
+.eff-emoji{font-size:3.2rem;display:block;margin-bottom:.45rem;animation:bounce .5s ease infinite alternate;}
+.eff-title{font-family:'Cinzel',serif;font-size:1.2rem;color:var(--gold);margin-bottom:.5rem;white-space:pre-line;}
+.eff-card.success .eff-title{color:#00ff88;}
+.eff-card.fail .eff-title{color:#ff4444;}
+.eff-desc{font-style:italic;color:var(--silver);font-size:.85rem;line-height:1.6;margin-bottom:1rem;white-space:pre-line;}
+.particle{position:fixed;pointer-events:none;z-index:400;font-size:1.5rem;animation:pfly var(--pd,1s) ease-out forwards;}
+
+/* ═══════════════════════════════════════════════════════
+   BATTLE SCREEN  v4
+   ═══════════════════════════════════════════════════════ */
+#battle-screen{display:none;position:fixed;inset:0;z-index:150;overflow:hidden;flex-direction:column;
+  background:radial-gradient(ellipse at 50% 30%,#14002a,#000010);}
+
+/* ── TOP BAR ── */
+.bt-topbar{display:flex;align-items:center;justify-content:space-between;padding:.4rem .9rem;
+  background:rgba(0,0,0,.55);border-bottom:1px solid rgba(201,168,76,.2);flex-shrink:0;gap:.5rem;}
+.bt-title{font-family:'Cinzel',serif;color:var(--gold);font-size:.82rem;text-shadow:0 0 10px rgba(201,168,76,.7);white-space:nowrap;}
+.lives-wrap{display:flex;align-items:center;gap:1rem;}
+.lives-block{display:flex;flex-direction:column;align-items:center;gap:.1rem;}
+.lives-label{font-family:'Cinzel',serif;font-size:.45rem;color:rgba(255,255,255,.4);letter-spacing:.5px;text-transform:uppercase;}
+.hearts-row{display:flex;gap:.2rem;}
+.heart{font-size:.95rem;transition:all .4s;}
+.heart.lost{opacity:.18;filter:grayscale(1) brightness(.5);}
+
+/* Info / spell reference button */
+.info-btn{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.22);color:var(--silver);
+  font-family:'Cinzel',serif;font-size:.9rem;width:30px;height:30px;border-radius:50%;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
+.info-btn:hover{background:rgba(255,255,255,.18);border-color:var(--gold);color:var(--gold);}
+
+/* ── ARENA ── */
+.bt-arena{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
+
+/* Characters strip */
+.bt-chars{display:flex;justify-content:space-between;align-items:flex-end;padding:.35rem 1.5rem 0;flex-shrink:0;}
+.bt-char{display:flex;flex-direction:column;align-items:center;gap:.15rem;}
+.bt-sprite{font-size:clamp(2.8rem,6vw,4.5rem);animation:floatSprite 3s ease-in-out infinite;}
+.bt-sprite.hero-s{filter:drop-shadow(0 0 14px rgba(0,120,255,.65));animation-delay:.6s;}
+.bt-sprite.vold-s{filter:drop-shadow(0 0 14px rgba(180,0,255,.65));}
+.bt-char-name{font-family:'Cinzel',serif;font-size:.58rem;color:var(--silver);}
+.flash-hit{animation:flashHit .45s ease!important;}
+.flash-good{animation:flashSuccess .45s ease!important;}
+
+/* Round label */
+.round-label-row{display:flex;justify-content:center;align-items:center;gap:.6rem;padding:.15rem .5rem;flex-shrink:0;}
+.round-pill{font-family:'Cinzel',serif;font-size:.6rem;padding:.15rem .7rem;border-radius:20px;
+  border:1px solid rgba(201,168,76,.4);color:var(--gold);background:rgba(201,168,76,.06);letter-spacing:1px;}
+
+/* ── DUEL BOARD ── */
+/* The whole duel area — scrollable horizontally on small screens */
+.bt-duel-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:.3rem .5rem;gap:.4rem;overflow-y:auto;overflow-x:hidden;min-height:0;}
+
+/* Spell info bars */
+.spell-info-row{display:flex;gap:.6rem;width:100%;max-width:680px;justify-content:center;}
+.spell-info-card{flex:1;border-radius:10px;padding:.35rem .7rem;display:flex;flex-direction:column;gap:.1rem;max-width:300px;}
+.spell-info-card.vold-card{background:rgba(120,0,0,.18);border:1px solid rgba(200,0,0,.3);}
+.spell-info-card.player-card{background:rgba(0,80,40,.18);border:1px solid rgba(0,180,80,.3);}
+.sic-label{font-family:'Cinzel',serif;font-size:.5rem;letter-spacing:1px;text-transform:uppercase;opacity:.7;}
+.vold-card .sic-label{color:#ff9999;}
+.player-card .sic-label{color:#88ffcc;}
+.sic-name{font-family:'Cinzel',serif;font-size:.7rem;}
+.vold-card .sic-name{color:#ff6666;}
+.player-card .sic-name{color:#44ddaa;}
+.sic-prog{font-size:.52rem;color:rgba(255,255,255,.45);font-style:italic;}
+
+/* Sequence track — shows vold slots on left, player slots on right */
+.seq-track{display:flex;align-items:center;justify-content:center;gap:.25rem;
+  flex-wrap:nowrap;overflow-x:auto;padding:.2rem .3rem;width:100%;max-width:700px;}
+
+/* Duel cells */
+.dc{width:54px;height:54px;border-radius:9px;border:2px dashed rgba(255,255,255,.15);background:rgba(0,0,0,.3);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:.06rem;position:relative;transition:all .3s;flex-shrink:0;font-size:1.2rem;}
+.dc-num{position:absolute;top:2px;left:4px;font-size:.42rem;color:rgba(255,255,255,.25);font-family:'Cinzel',serif;}
+.dc-lbl{font-size:.33rem;color:rgba(255,255,255,.38);text-align:center;line-height:1;max-width:50px;}
+
+/* Voldemort cell states */
+.dc.v-hidden{border-color:rgba(180,0,0,.2);opacity:.5;}
+.dc.v-revealed{border-color:rgba(200,0,0,.7);background:rgba(100,0,0,.25);box-shadow:0 0 10px rgba(200,0,0,.4);animation:voldReveal .4s ease;}
+.dc.v-active{border-color:#ff4444;background:rgba(100,0,0,.35);box-shadow:0 0 18px rgba(255,0,0,.6);animation:pulseSlot 1s ease-in-out infinite alternate;}
+
+/* Player cell states */
+.dc.p-pending{border-color:rgba(201,168,76,.15);opacity:.45;}
+.dc.p-active{border-color:var(--gold);background:rgba(201,168,76,.1);box-shadow:0 0 14px rgba(201,168,76,.5);animation:pulsePick 1s ease-in-out infinite alternate;}
+.dc.p-correct{border-color:var(--green)!important;background:rgba(0,255,136,.15)!important;box-shadow:0 0 14px rgba(0,255,136,.5)!important;animation:correctPop .35s ease;}
+.dc.p-wrong{border-color:var(--red)!important;background:rgba(255,68,68,.15)!important;box-shadow:0 0 14px rgba(255,68,68,.5)!important;animation:shake .35s ease;}
+.dc.p-timeout{border-color:rgba(255,140,0,.6)!important;background:rgba(255,100,0,.12)!important;}
+
+/* VS divider */
+.vs-div{font-family:'Cinzel',serif;font-size:.8rem;color:rgba(201,168,76,.5);padding:0 .1rem;flex-shrink:0;align-self:center;}
+
+/* ── PICK BUTTONS ── */
+.pick-section{display:flex;flex-direction:column;align-items:center;gap:.35rem;width:100%;max-width:500px;flex-shrink:0;}
+.pick-instruction{font-family:'Cinzel',serif;font-size:.62rem;color:var(--gold);letter-spacing:.5px;text-align:center;line-height:1.4;}
+.pick-row{display:flex;gap:.9rem;justify-content:center;}
+.pick-btn{display:flex;flex-direction:column;align-items:center;gap:.22rem;
+  background:rgba(201,168,76,.06);border:2px solid rgba(201,168,76,.35);border-radius:13px;
+  padding:.55rem .85rem;cursor:pointer;transition:all .2s;min-width:100px;max-width:140px;
+  font-family:'IM Fell English',serif;}
+.pick-btn:hover:not(:disabled){background:rgba(201,168,76,.2);border-color:var(--gold);transform:translateY(-3px);box-shadow:0 0 20px rgba(201,168,76,.5);}
+.pick-btn:active:not(:disabled){transform:translateY(0);}
+.pick-btn:disabled{cursor:default;opacity:.5;}
+.pb-icon{font-size:2.1rem;}
+.pb-name{font-size:.55rem;color:var(--silver);text-align:center;line-height:1.2;max-width:110px;}
+.pick-btn.c-correct{border-color:var(--green)!important;background:rgba(0,255,136,.18)!important;box-shadow:0 0 22px rgba(0,255,136,.6)!important;animation:correctPop .35s ease;}
+.pick-btn.c-wrong{border-color:var(--red)!important;background:rgba(255,68,68,.18)!important;box-shadow:0 0 22px rgba(255,68,68,.6)!important;animation:shake .35s ease;}
+
+/* Timer */
+.timer-row{display:flex;flex-direction:column;align-items:center;gap:.2rem;width:100%;max-width:280px;}
+.timer-nums{font-family:'Cinzel',serif;font-size:.8rem;color:var(--gold);}
+.timer-nums.danger{color:var(--red);animation:pulseSlot .5s ease-in-out infinite alternate;}
+.timer-track{width:100%;height:7px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;}
+.timer-fill{height:100%;border-radius:4px;background:linear-gradient(to right,#00ff88,#ffd700);transition:width .1s linear,background .3s;}
+.timer-fill.danger{background:linear-gradient(to right,#ff5500,#ff2222);}
+
+/* Status log */
+.bt-log{flex-shrink:0;text-align:center;font-size:.67rem;font-style:italic;min-height:30px;
+  padding:.3rem 1rem;background:rgba(0,0,0,.5);border-top:1px solid rgba(255,255,255,.06);}
+.bt-log.good{color:var(--green);}
+.bt-log.bad{color:var(--red);}
+.bt-log.info{color:var(--gold);}
+.bt-log.warn{color:#ffaa33;}
+
+/* Round win / lose badge */
+.round-badge{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+  font-family:'Cinzel',serif;font-size:2rem;font-weight:900;padding:.5rem 1.4rem;border-radius:10px;
+  pointer-events:none;z-index:600;opacity:0;}
+.round-badge.show{animation:roundWinBadge .9s cubic-bezier(.175,.885,.32,1.275) forwards;}
+.round-badge.win-badge{color:#00ff88;text-shadow:0 0 25px #00ff88;}
+.round-badge.lose-badge{color:#ff4444;text-shadow:0 0 25px #ff4444;}
+
+/* Projectile */
+.proj{position:fixed;z-index:700;font-size:2.5rem;pointer-events:none;will-change:transform;}
+
+/* ─────────────────────── SPELL REFERENCE ─────────────────────── */
+#spell-ref{display:none;position:fixed;inset:0;z-index:500;align-items:center;justify-content:center;}
+#spell-ref.active{display:flex;}
+.sr-bg{position:absolute;inset:0;background:rgba(0,0,0,.87);}
+.sr-card{position:relative;background:linear-gradient(135deg,#07011a,#0e0326);border:2px solid var(--gold);
+  border-radius:14px;padding:1.1rem 1.4rem;max-width:500px;width:95%;max-height:82vh;overflow-y:auto;animation:popIn .3s ease;}
+.sr-title{font-family:'Cinzel',serif;color:var(--gold);font-size:.88rem;text-align:center;margin-bottom:.8rem;letter-spacing:1px;}
+.sr-spell-row{display:flex;align-items:center;gap:.6rem;padding:.4rem .5rem;border-radius:8px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);margin-bottom:.35rem;}
+.sr-icon{font-size:1.5rem;flex-shrink:0;}
+.sr-info{flex:1;min-width:0;}
+.sr-name{font-family:'Cinzel',serif;font-size:.65rem;color:var(--gold);margin-bottom:.18rem;}
+.sr-seq{display:flex;gap:.18rem;align-items:center;flex-wrap:wrap;}
+.sr-chip{font-size:.95rem;}
+.sr-close{text-align:center;margin-top:.8rem;}
+
+/* ─────────────────────── WIN / DEFEAT ─────────────────────── */
+#win-screen,#defeat-screen{display:none;position:fixed;inset:0;z-index:800;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+#win-screen{background:radial-gradient(ellipse at center,rgba(0,40,0,.96),rgba(0,0,10,.99));}
+#defeat-screen{background:radial-gradient(ellipse at center,rgba(60,0,0,.97),rgba(0,0,10,.99));}
+.win-title{font-family:'Cinzel',serif;font-size:clamp(1.8rem,4.5vw,3rem);font-weight:900;color:var(--gold);animation:glow 1.5s infinite alternate;margin-bottom:.8rem;}
+.lose-title{font-family:'Cinzel',serif;font-size:clamp(1.8rem,4.5vw,3rem);font-weight:900;color:#ff4444;text-shadow:0 0 30px #ff0000;margin-bottom:.8rem;}
+.end-sub{font-style:italic;color:var(--silver);max-width:380px;line-height:1.7;margin:0 auto 1.5rem;}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:rgba(201,168,76,.35);border-radius:2px;}
+
+/* ─────────────────────── PRE-BATTLE REVISE SCREEN ─────────────────────── */
+#revise-screen{display:none;position:fixed;inset:0;z-index:300;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at center,rgba(10,0,30,.97),rgba(2,2,14,.99));}
+.revise-header{font-family:'Cinzel',serif;font-size:clamp(1.2rem,3vw,2rem);font-weight:900;color:var(--gold);
+  text-align:center;animation:glow 2s infinite alternate;margin-bottom:.3rem;}
+.revise-sub{font-style:italic;color:var(--silver);font-size:.85rem;text-align:center;margin-bottom:1.2rem;opacity:.75;}
+.revise-timer-wrap{display:flex;align-items:center;gap:.7rem;margin-bottom:1rem;}
+.revise-timer-label{font-family:'Cinzel',serif;font-size:.65rem;color:rgba(255,255,255,.5);letter-spacing:1px;}
+.revise-countdown{font-family:'Cinzel',serif;font-size:1.4rem;color:var(--gold);min-width:2rem;text-align:center;
+  animation:pulseSlot .8s ease-in-out infinite alternate;}
+.revise-spell-grid{display:flex;flex-direction:column;gap:.4rem;width:100%;max-width:520px;
+  max-height:55vh;overflow-y:auto;padding:0 .5rem;}
+.revise-spell-row{display:flex;align-items:center;gap:.7rem;padding:.45rem .7rem;border-radius:9px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.15);transition:background .2s;}
+.revise-spell-row:hover{background:rgba(201,168,76,.08);}
+.revise-spell-icon{font-size:1.5rem;flex-shrink:0;}
+.revise-spell-info{flex:1;min-width:0;}
+.revise-spell-name{font-family:'Cinzel',serif;font-size:.68rem;color:var(--gold);margin-bottom:.18rem;}
+.revise-spell-seq{display:flex;gap:.2rem;align-items:center;flex-wrap:wrap;}
+.revise-chip{font-size:.95rem;}
+.revise-ing-name{font-size:.45rem;color:var(--silver);white-space:nowrap;}
+.revise-btn-row{display:flex;gap:.8rem;margin-top:1.2rem;flex-wrap:wrap;justify-content:center;}
+
+/* ─────────────────────── PAUSE MODAL (after hit / after round) ─────────────────────── */
+#pause-modal{display:none;position:fixed;inset:0;z-index:400;align-items:center;justify-content:center;}
+#pause-modal.active{display:flex;}
+.pause-bg{position:absolute;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(6px);}
+.pause-card{position:relative;background:linear-gradient(135deg,#08021a,#10032a);border:2px solid var(--gold);
+  border-radius:14px;padding:1.4rem 1.6rem;max-width:480px;width:94%;text-align:center;
+  animation:popIn .35s cubic-bezier(.175,.885,.32,1.275);box-shadow:0 0 50px rgba(201,168,76,.25);}
+.pause-card.hit-card{border-color:#ff4444;box-shadow:0 0 50px rgba(255,68,68,.3);}
+.pause-card.round-card{border-color:#00ff88;box-shadow:0 0 50px rgba(0,255,136,.25);}
+.pause-emoji{font-size:2.8rem;display:block;margin-bottom:.4rem;animation:bounce .5s ease infinite alternate;}
+.pause-title{font-family:'Cinzel',serif;font-size:1.1rem;margin-bottom:.3rem;white-space:pre-line;}
+.hit-card .pause-title{color:#ff6666;}
+.round-card .pause-title{color:#00ff88;}
+.pause-desc{font-style:italic;color:var(--silver);font-size:.8rem;line-height:1.55;margin-bottom:.9rem;white-space:pre-line;}
+
+/* Mini spellbook inside pause modal */
+.pause-spellbook{text-align:left;background:rgba(0,0,0,.3);border:1px solid rgba(201,168,76,.18);
+  border-radius:9px;padding:.55rem .7rem;margin-bottom:.9rem;max-height:200px;overflow-y:auto;}
+.pause-sb-title{font-family:'Cinzel',serif;font-size:.62rem;color:var(--gold);letter-spacing:1px;
+  margin-bottom:.45rem;text-align:center;}
+.pause-sb-row{display:flex;align-items:center;gap:.5rem;padding:.28rem .3rem;border-radius:6px;
+  border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:.18rem;}
+.pause-sb-row:last-child{border-bottom:none;margin-bottom:0;}
+.pause-sb-icon{font-size:1.2rem;flex-shrink:0;}
+.pause-sb-info{flex:1;}
+.pause-sb-name{font-family:'Cinzel',serif;font-size:.6rem;color:var(--gold);}
+.pause-sb-seq{display:flex;gap:.15rem;align-items:center;flex-wrap:wrap;margin-top:.1rem;}
+.pause-chip{font-size:.85rem;}
+.pause-btn-row{display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap;}
+
+/* ── Voldemort 5-segment HP bar ── */
+.vold-hp-bar{display:flex;gap:3px;align-items:center;}
+.vold-seg{width:22px;height:13px;border-radius:3px;border:1px solid rgba(220,50,50,.6);
+  background:linear-gradient(to bottom,#dd2222,#880000);
+  box-shadow:0 0 6px rgba(255,0,0,.45);transition:all .4s ease;flex-shrink:0;}
+.vold-seg.seg-dead{background:rgba(60,10,10,.3);border-color:rgba(80,20,20,.3);box-shadow:none;}
+.vold-seg.seg-dying{animation:segDie .55s ease forwards;}
+@keyframes segDie{
+  0%  {transform:scaleY(1);filter:brightness(1);}
+  35% {transform:scaleY(1.4);filter:brightness(4) hue-rotate(20deg);}
+  100%{transform:scaleY(0.05) scaleX(.7);filter:brightness(.2);opacity:.3;}
+}
+
+/* ── Phase transition overlay ── */
+#phase-transition{display:none;position:fixed;inset:0;z-index:350;align-items:center;justify-content:center;}
+#phase-transition.active{display:flex;}
+.pt-bg{position:absolute;inset:0;background:rgba(0,0,0,.91);backdrop-filter:blur(10px);}
+.pt-card{position:relative;border-radius:18px;padding:1.8rem 2.2rem;max-width:470px;width:94%;
+  text-align:center;animation:popIn .45s cubic-bezier(.175,.885,.32,1.275);}
+.pt-card.easy-pt {background:linear-gradient(135deg,#08160a,#102010);border:2px solid #00cc66;box-shadow:0 0 60px rgba(0,200,100,.3);}
+.pt-card.medium-pt{background:linear-gradient(135deg,#080e22,#0c1530);border:2px solid #5599ff;box-shadow:0 0 60px rgba(80,150,255,.3);}
+.pt-card.hard-pt  {background:linear-gradient(135deg,#1c0000,#320000);border:2px solid #ff3333;box-shadow:0 0 80px rgba(255,50,50,.45);}
+.pt-face{font-size:3.8rem;display:block;margin-bottom:.4rem;animation:float 2s ease-in-out infinite;}
+.pt-tier-badge{display:inline-block;font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:2px;
+  padding:.2rem .8rem;border-radius:20px;margin-bottom:.7rem;font-weight:700;text-transform:uppercase;}
+.easy-pt  .pt-tier-badge{background:rgba(0,200,100,.15);color:#44ff99;border:1px solid rgba(0,200,100,.4);}
+.medium-pt .pt-tier-badge{background:rgba(80,150,255,.15);color:#88bbff;border:1px solid rgba(80,150,255,.4);}
+.hard-pt  .pt-tier-badge{background:rgba(255,50,50,.15);color:#ff8888;border:1px solid rgba(255,50,50,.4);}
+.pt-dialogue{font-family:'IM Fell English',serif;font-style:italic;font-size:.9rem;line-height:1.7;
+  margin-bottom:.65rem;}
+.easy-pt   .pt-dialogue{color:#aaffcc;}
+.medium-pt .pt-dialogue{color:#aaccff;}
+.hard-pt   .pt-dialogue{color:#ffaaaa;}
+.pt-spell-row{font-family:'Cinzel',serif;font-size:.72rem;padding:.35rem .75rem;border-radius:8px;
+  margin:.3rem 0;line-height:1.5;}
+.easy-pt   .pt-spell-row{background:rgba(0,200,100,.08);color:#88ffbb;}
+.medium-pt .pt-spell-row{background:rgba(80,150,255,.08);color:#88bbff;}
+.hard-pt   .pt-spell-row{background:rgba(255,50,50,.1);color:#ffaaaa;}
+.pt-counter-row{font-family:'Cinzel',serif;font-size:.7rem;color:var(--gold);margin-bottom:1.2rem;opacity:.9;}
+/* animated text cursor */
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+.pt-cursor{animation:blink .7s infinite;}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+<div id="game-container">
+
+<!-- ═══ TITLE ═══ -->
+<div id="title-screen">
+  <div class="wizard-big">🧙</div>
+  <div class="title-logo">The Potion<br>Master's Quest</div>
+  <div class="title-sub">— A Wizarding Brewing Adventure —</div>
+  <div class="title-instructions">
+    A <strong style="color:var(--gold)">glowing grid</strong> shows how many ingredients each spell needs.<br>
+    Pick ingredients one at a time — their <strong style="color:var(--gold)">order numbers appear on the tile</strong>.<br>
+    <span style="color:var(--green)">Green ✓ = correct</span> &nbsp;|&nbsp; <span style="color:var(--red)">Red ✗ = wrong</span> (funny side-effect!).<br>
+    Discover all <strong style="color:var(--gold)">9 spells</strong> then duel Voldemort step-by-step!
+  </div>
+  <button class="btn" onclick="startGame()">✨ Begin Brewing ✨</button>
+
+  <!-- DEV TOGGLE -->
+  <div id="dev-toggle-wrap" onclick="toggleDevMode()" title="Toggle: skip brewing phase and unlock all spells for testing Voldemort stage">
+    <div class="dev-badge" id="dev-badge">DEV</div>
+    <div class="dev-toggle-label" id="dev-label">All Spells Locked</div>
+    <div class="toggle-pill"><div class="toggle-knob"></div></div>
+  </div>
+</div>
+
+<!-- ═══ MAIN GAME ═══ -->
+<div id="main-game">
+  <div class="game-header">
+    <div class="game-title">⚗️ Potion Laboratory</div>
+    <div style="display:flex;gap:.5rem;align-items:center;">
+      <span id="phase-badge" class="phase-badge phase-easy">EASY PHASE</span>
+      <span style="font-size:.7rem;color:var(--silver);">Spells: <span id="sc" style="color:var(--gold);font-weight:bold;">0</span>/9</span>
+    </div>
+    <button id="battle-btn" onclick="tryOpenBattle()">⚔️ Face Voldemort</button>
+  </div>
+  <div class="game-body">
+    <div class="panel left-panel">
+      <div class="panel-title">📦 Ingredients</div>
+      <div class="ing-grid" id="ing-grid"></div>
+      <div id="ing-hint" style="margin-top:.5rem;font-size:.56rem;color:rgba(255,255,255,.3);text-align:center;font-style:italic;">Tap an ingredient to fill the glowing slot →</div>
+    </div>
+    <div class="center-area">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:.3rem;width:100%;">
+        <div style="font-family:'Cinzel',serif;font-size:.6rem;color:rgba(255,255,255,.35);letter-spacing:1px;">SPELL PROGRESS</div>
+        <div class="phase-dots" id="phase-dots"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:.25rem;width:100%;">
+        <div class="spell-grid-label" id="grid-label">🔒 Secret Spell #1</div>
+        <div class="spell-grid-sub" id="grid-sub">Fill each slot with the correct ingredient</div>
+        <div class="sequence-grid" id="sequence-grid"></div>
+      </div>
+      <div class="cauldron-area">
+        <div class="steam-wrap" id="steam-wrap"></div>
+        <svg class="cauldron-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect x="62" y="154" width="11" height="28" rx="4" fill="#151515" stroke="#2a2a2a" stroke-width="1"/>
+          <rect x="127" y="154" width="11" height="28" rx="4" fill="#151515" stroke="#2a2a2a" stroke-width="1"/>
+          <rect x="94" y="160" width="11" height="22" rx="4" fill="#151515" stroke="#2a2a2a" stroke-width="1"/>
+          <path d="M 32 154 Q 22 100 32 70 Q 52 40 100 38 Q 148 40 168 70 Q 178 100 168 154 Z" fill="#111" stroke="#252525" stroke-width="3"/>
+          <ellipse cx="100" cy="155" rx="69" ry="11" fill="#0e0e0e" stroke="#303030" stroke-width="2"/>
+          <ellipse cx="100" cy="70" rx="71" ry="13" fill="#181818" stroke="#3a3a3a" stroke-width="2"/>
+          <ellipse cx="100" cy="68" rx="67" ry="11" fill="#222" stroke="#444" stroke-width="1"/>
+          <ellipse cx="100" cy="80" rx="59" ry="9" id="brew-top" fill="#1a4a1a" opacity=".95"/>
+          <path d="M 32 110 Q 12 100 17 80 Q 22 65 32 80" fill="none" stroke="#2a2a2a" stroke-width="6" stroke-linecap="round"/>
+          <path d="M 168 110 Q 188 100 183 80 Q 178 65 168 80" fill="none" stroke="#2a2a2a" stroke-width="6" stroke-linecap="round"/>
+          <path d="M 52 80 Q 62 65 100 60" stroke="#383838" stroke-width="2" fill="none" opacity=".6"/>
+        </svg>
+        <div class="brew-liquid" id="brew-liquid">
+          <div class="brew-bubble" style="width:7px;height:7px;left:18%;--bd:1.6s;--bdl:.1s;bottom:4px;"></div>
+          <div class="brew-bubble" style="width:5px;height:5px;left:52%;--bd:2.1s;--bdl:.8s;bottom:3px;"></div>
+          <div class="brew-bubble" style="width:9px;height:9px;left:78%;--bd:1.9s;--bdl:.4s;bottom:5px;"></div>
+        </div>
+      </div>
+      <div class="hint-box" id="center-hint">Tap an ingredient on the left to fill the glowing slot!</div>
+    </div>
+    <div class="panel right-panel">
+      <div class="panel-title">📖 Spellbook</div>
+      <div id="spellbook" style="display:flex;flex-direction:column;gap:.4rem;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BREW EFFECT OVERLAY ═══ -->
+<div id="effect-overlay">
+  <div class="eff-bg" onclick="closeEffect()"></div>
+  <div class="eff-card" id="eff-card">
+    <span class="eff-emoji" id="eff-emoji">💥</span>
+    <div class="eff-title" id="eff-title">Oops!</div>
+    <div class="eff-desc" id="eff-desc"></div>
+    <button class="btn" id="eff-btn" onclick="closeEffect()" style="font-size:.8rem;padding:.5rem 1.5rem;">Try Again</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     BATTLE SCREEN
+     ═══════════════════════════════════════ -->
+<div id="battle-screen">
+
+  <!-- TOP BAR -->
+  <div class="bt-topbar">
+    <div class="bt-title">⚔️ THE FINAL DUEL</div>
+    <div class="lives-wrap">
+      <div class="lives-block">
+        <div class="lives-label">Your Lives</div>
+        <div class="hearts-row" id="player-hearts"></div>
+      </div>
+      <div style="width:1px;height:28px;background:rgba(255,255,255,.12);"></div>
+      <div class="lives-block">
+        <div class="lives-label">Voldemort HP</div>
+        <div class="vold-hp-bar" id="vold-hearts"></div>
+      </div>
+    </div>
+    <button class="info-btn" onclick="toggleSpellRef()" title="View your unlocked spells">ℹ</button>
+  </div>
+
+  <!-- ARENA -->
+  <div class="bt-arena">
+
+    <!-- Characters -->
+    <div class="bt-chars">
+      <div class="bt-char">
+        <div class="bt-sprite hero-s" id="bt-hero">🧙‍♂️</div>
+        <div class="bt-char-name">Harry Potter</div>
+      </div>
+      <div class="round-label-row">
+        <div class="round-pill" id="round-pill">Spell 1 of 4</div>
+      </div>
+      <div class="bt-char">
+        <div class="bt-sprite vold-s" id="bt-vold">🧛</div>
+        <div class="bt-char-name" style="color:#ff9999;">Lord Voldemort</div>
+      </div>
+    </div>
+
+    <!-- Duel board -->
+    <div class="bt-duel-wrap">
+
+      <!-- Spell name cards -->
+      <div class="spell-info-row" id="spell-info-row">
+        <div class="spell-info-card vold-card" id="vold-spell-card">
+          <div class="sic-label">Voldemort casts</div>
+          <div class="sic-name" id="vold-spell-name">—</div>
+          <div class="sic-prog" id="vold-spell-prog"></div>
+        </div>
+        <div class="spell-info-card player-card" id="player-spell-card">
+          <div class="sic-label">Your counter-spell</div>
+          <div class="sic-name" id="player-spell-name">—</div>
+          <div class="sic-prog" id="player-spell-prog"></div>
+        </div>
+      </div>
+
+      <!-- Sequence track -->
+      <div class="seq-track" id="seq-track"></div>
+
+      <!-- Pick buttons (shown when player must act) -->
+      <div class="pick-section" id="pick-section" style="display:none;">
+        <div class="pick-instruction" id="pick-instruction">Choose the correct ingredient:</div>
+        <div class="pick-row" id="pick-row"></div>
+        <div class="timer-row">
+          <div class="timer-nums" id="timer-nums">5</div>
+          <div class="timer-track"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+        </div>
+      </div>
+
+    </div><!-- /.bt-duel-wrap -->
+
+    <!-- Log -->
+    <div class="bt-log info" id="bt-log">⚡ Prepare for the Final Duel!</div>
+
+  </div><!-- /.bt-arena -->
+
+  <!-- Round badge (positioned absolute over the arena) -->
+  <div class="round-badge" id="round-badge"></div>
+
+</div><!-- /#battle-screen -->
+
+<!-- ═══════════════════════════════════════
+     PHASE TRANSITION OVERLAY
+     ═══════════════════════════════════════ -->
+<div id="phase-transition">
+  <div class="pt-bg"></div>
+  <div class="pt-card" id="pt-card">
+    <span class="pt-face" id="pt-face">🧛</span>
+    <div class="pt-tier-badge" id="pt-tier-badge">Easy Spells</div>
+    <div class="pt-dialogue" id="pt-dialogue"></div>
+    <div class="pt-spell-row"  id="pt-spell-row"></div>
+    <div class="pt-counter-row" id="pt-counter-row"></div>
+    <button class="btn" id="pt-btn" style="font-size:.82rem;padding:.55rem 1.6rem;" onclick="closePhaseTransition()">⚔️ Bring It On!</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PRE-BATTLE REVISE SCREEN
+     ═══════════════════════════════════════ -->
+<div id="revise-screen">
+  <div style="font-size:3rem;animation:float 2s ease-in-out infinite;margin-bottom:.5rem;">📖</div>
+  <div class="revise-header">Revise Your Spells!</div>
+  <div class="revise-sub">You'll need these to counter Voldemort's attacks.<br>Study them well — the duel begins soon!</div>
+  <div class="revise-timer-wrap">
+    <div class="revise-timer-label">DUEL BEGINS IN</div>
+    <div class="revise-countdown" id="revise-countdown">15</div>
+    <div class="revise-timer-label">SECONDS</div>
+  </div>
+  <div class="revise-spell-grid" id="revise-spell-grid"></div>
+  <div class="revise-btn-row">
+    <button class="btn" onclick="closeReviseAndFight()" style="font-size:.85rem;padding:.6rem 1.8rem;">
+      ⚔️ I'm Ready — Start the Duel!
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PAUSE MODAL  (after hit / after round)
+     ═══════════════════════════════════════ -->
+<div id="pause-modal">
+  <div class="pause-bg"></div>
+  <div class="pause-card" id="pause-card">
+    <span class="pause-emoji" id="pause-emoji">📖</span>
+    <div class="pause-title" id="pause-title">Check Your Spells!</div>
+    <div class="pause-desc"  id="pause-desc"></div>
+    <div class="pause-spellbook">
+      <div class="pause-sb-title">📖 Your Unlocked Spells</div>
+      <div id="pause-sb-list"></div>
+    </div>
+    <div class="pause-btn-row" id="pause-btn-row"></div>
+  </div>
+</div>
+
+<!-- ═══ SPELL REFERENCE ═══ -->
+<div id="spell-ref">
+  <div class="sr-bg" onclick="toggleSpellRef()"></div>
+  <div class="sr-card">
+    <div class="sr-title">📖 Your Unlocked Spells</div>
+    <div id="sr-list"></div>
+    <div class="sr-close">
+      <button class="btn" onclick="toggleSpellRef()" style="font-size:.75rem;padding:.4rem 1.2rem;">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ WIN / DEFEAT ═══ -->
+<div id="win-screen">
+  <div style="font-size:5rem;animation:float 2s ease-in-out infinite">🏆</div>
+  <div class="win-title">VOLDEMORT DEFEATED!</div>
+  <div class="end-sub">Your mastery of the potion arts has saved the wizarding world.<br>All spells blocked, all 9 hits landed. Mischief Managed! 🗺️</div>
+  <button class="btn" onclick="location.reload()">🔄 Play Again</button>
+</div>
+<div id="defeat-screen">
+  <div style="font-size:5rem;animation:float 2s ease-in-out infinite">💀</div>
+  <div class="lose-title">YOU HAVE FALLEN…</div>
+  <div class="end-sub">The Dark Lord was too powerful this time.<br>But courage is not the absence of fear, Harry.</div>
+  <button class="btn" onclick="location.reload()">🔄 Try Again</button>
+</div>
+
+</div><!-- #game-container -->
+
+<script>
+// ════════════════════════════════════════════════
+//  AUDIO  (Web Audio API — no external files)
+// ════════════════════════════════════════════════
+let _ac = null;
+function AC(){ if(!_ac) _ac = new (window.AudioContext||window.webkitAudioContext)(); return _ac; }
+
+const ING_SND = {
+  moonstone:   {f:[523,659,784],   t:'sine',     d:.4},
+  dragonblood: {f:[220,277,330],   t:'sawtooth', d:.35},
+  fireseeds:   {f:[440,554,660],   t:'square',   d:.30},
+  ashwinder:   {f:[349,440,523],   t:'sine',     d:.38},
+  boomslang:   {f:[196,247,294],   t:'triangle', d:.40},
+  unicorn:     {f:[659,784,1047],  t:'sine',     d:.45},
+  stardust:    {f:[880,1109,1319], t:'sine',     d:.50},
+  flobberworm: {f:[165,208,247],   t:'sawtooth', d:.32},
+  wolfsbane:   {f:[262,330,392],   t:'triangle', d:.40},
+  lacewing:    {f:[587,740,880],   t:'sine',     d:.38},
+  jobberknoll: {f:[698,880,1047],  t:'sine',     d:.42},
+  mandrake:    {f:[233,294,349],   t:'square',   d:.36},
+};
+
+function sndIng(id){
+  try{
+    const ctx=AC(), s=ING_SND[id]; if(!s)return;
+    const now=ctx.currentTime;
+    s.f.forEach((f,i)=>{
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type=s.t; o.frequency.value=f;
+      g.gain.setValueAtTime(.16, now+i*.06);
+      g.gain.exponentialRampToValueAtTime(.001, now+i*.06+s.d);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(now+i*.06); o.stop(now+i*.06+s.d);
+    });
+  }catch(e){}
+}
+function sndOk(){
+  try{
+    const ctx=AC(), now=ctx.currentTime;
+    [523,659,784,1047,1319].forEach((f,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type='sine'; o.frequency.value=f;
+      g.gain.setValueAtTime(.18,now+i*.09); g.gain.exponentialRampToValueAtTime(.001,now+i*.09+.45);
+      o.connect(g); g.connect(ctx.destination); o.start(now+i*.09); o.stop(now+i*.09+.5);
+    });
+  }catch(e){}
+}
+function sndFail(){
+  try{
+    const ctx=AC(), now=ctx.currentTime;
+    [220,196,165].forEach((f,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type='sawtooth'; o.frequency.value=f;
+      g.gain.setValueAtTime(.2,now+i*.12); g.gain.exponentialRampToValueAtTime(.001,now+i*.12+.4);
+      o.connect(g); g.connect(ctx.destination); o.start(now+i*.12); o.stop(now+i*.12+.5);
+    });
+  }catch(e){}
+}
+function sndHit(good){
+  try{
+    const ctx=AC(), now=ctx.currentTime;
+    (good?[440,554,659]:[220,196]).forEach((f,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type=good?'sine':'sawtooth'; o.frequency.value=f;
+      g.gain.setValueAtTime(.18,now+i*.07); g.gain.exponentialRampToValueAtTime(.001,now+i*.07+.28);
+      o.connect(g); g.connect(ctx.destination); o.start(now+i*.07); o.stop(now+i*.07+.32);
+    });
+  }catch(e){}
+}
+function sndVictory(){
+  try{
+    const ctx=AC(), now=ctx.currentTime;
+    [523,659,784,1047,784,1047,1319].forEach((f,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type='sine'; o.frequency.value=f;
+      g.gain.setValueAtTime(.18,now+i*.15); g.gain.exponentialRampToValueAtTime(.001,now+i*.15+.38);
+      o.connect(g); g.connect(ctx.destination); o.start(now+i*.15); o.stop(now+i*.15+.42);
+    });
+  }catch(e){}
+}
+function sndVoldIng(id){
+  try{
+    const ctx=AC(), s=ING_SND[id]; if(!s)return;
+    const now=ctx.currentTime;
+    s.f.forEach((f,i)=>{
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type='sawtooth'; o.frequency.value=f*0.5;
+      g.gain.setValueAtTime(.12, now+i*.08);
+      g.gain.exponentialRampToValueAtTime(.001, now+i*.08+.5);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(now+i*.08); o.stop(now+i*.08+.55);
+    });
+  }catch(e){}
+}
+
+// ════════════════════════════════════════════════
+//  BACKGROUND MUSIC  (Web Audio API — procedural)
+// ════════════════════════════════════════════════
+/*
+  Brewing music  — slow, mysterious arpeggios in minor key, soft triangle waves
+  Battle music   — urgent, ominous repeating ostinato with building tension
+  Both are purely generated with oscillators; no audio files needed.
+*/
+
+function stopMusic(){
+  try{
+    _musicRunning=false;
+    if(_musicLoop){ clearTimeout(_musicLoop); _musicLoop=null; }
+    _musicNodes.forEach(n=>{ try{n.stop();}catch(e){} });
+    _musicNodes=[];
+  }catch(e){}
+}
+
+// ── Brewing ambient music: slow dreamy arpeggio loop ──
+// Notes: Cm pentatonic — C3 Eb3 F3 G3 Bb3
+const BREW_NOTES=[130.81,155.56,174.61,196.00,233.08];
+let _brewMusicBar=0;
+function startBrewMusic(){
+  stopMusic(); _musicRunning=true;
+  function playBar(){
+    if(!_musicRunning)return;
+    try{
+      const ctx=AC(), now=ctx.currentTime;
+      // Pick 3 notes from the scale for a gentle chord swell
+      const notes=[BREW_NOTES[_brewMusicBar%5], BREW_NOTES[(_brewMusicBar+2)%5], BREW_NOTES[(_brewMusicBar+4)%5]];
+      notes.forEach((f,i)=>{
+        const o=ctx.createOscillator(), g=ctx.createGain();
+        o.type='triangle'; o.frequency.value=f*(i===2?2:1); // top note up octave
+        g.gain.setValueAtTime(0,now+i*.18);
+        g.gain.linearRampToValueAtTime(.055,now+i*.18+.4);
+        g.gain.exponentialRampToValueAtTime(.001,now+i*.18+2.2);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(now+i*.18); o.stop(now+i*.18+2.5);
+        _musicNodes.push(o);
+      });
+      // Low drone pad
+      const d=ctx.createOscillator(), dg=ctx.createGain();
+      d.type='sine'; d.frequency.value=BREW_NOTES[0]*.5;
+      dg.gain.setValueAtTime(0,now); dg.gain.linearRampToValueAtTime(.04,now+.8);
+      dg.gain.exponentialRampToValueAtTime(.001,now+2.8);
+      d.connect(dg); dg.connect(ctx.destination);
+      d.start(now); d.stop(now+3.0); _musicNodes.push(d);
+    }catch(e){}
+    _brewMusicBar++;
+    if(_musicRunning) _musicLoop=setTimeout(playBar,2600);
+  }
+  playBar();
+}
+
+// ── Battle music: urgent ostinato that escalates by tier ──
+// Base: Am — A2 C3 E3 G3, 16th-note pulse pattern
+const BATTLE_BASE=[110,130.81,164.81,196.00];
+let _battleTier='easy'; // 'easy'|'medium'|'hard'
+let _battleBeat=0;
+// Pattern: 1=hit, 0=rest  (16 steps)
+const EASY_PAT  =[1,0,0,0, 1,0,1,0, 1,0,0,0, 1,0,1,0];
+const MED_PAT   =[1,0,1,0, 1,1,0,1, 1,0,1,0, 1,1,0,1];
+const HARD_PAT  =[1,1,0,1, 1,0,1,1, 1,1,0,1, 1,1,1,1];
+
+function startBattleMusic(tier){
+  stopMusic(); _musicRunning=true; _battleTier=tier||'easy'; _battleBeat=0;
+  const BPM=tier==='hard'?160:tier==='medium'?138:118;
+  const step=60000/(BPM*4); // 16th note ms
+
+  function tick(){
+    if(!_musicRunning)return;
+    try{
+      const ctx=AC(), now=ctx.currentTime;
+      const pat=_battleTier==='hard'?HARD_PAT:_battleTier==='medium'?MED_PAT:EASY_PAT;
+      const beat=_battleBeat%16;
+
+      if(pat[beat]){
+        // Bass pulse
+        const b=ctx.createOscillator(), bg=ctx.createGain();
+        b.type='sawtooth';
+        b.frequency.value=BATTLE_BASE[beat%4]*.5;
+        bg.gain.setValueAtTime(.12,now); bg.gain.exponentialRampToValueAtTime(.001,now+(step/1000)*.8);
+        b.connect(bg); bg.connect(ctx.destination);
+        b.start(now); b.stop(now+(step/1000)*.9); _musicNodes.push(b);
+
+        // Accent note every 4 beats
+        if(beat%4===0){
+          const a=ctx.createOscillator(), ag=ctx.createGain();
+          a.type='square';
+          a.frequency.value=BATTLE_BASE[Math.floor(beat/4)];
+          ag.gain.setValueAtTime(.06,now); ag.gain.exponentialRampToValueAtTime(.001,now+(step/1000)*2);
+          a.connect(ag); ag.connect(ctx.destination);
+          a.start(now); a.stop(now+(step/1000)*2.2); _musicNodes.push(a);
+        }
+
+        // Hard mode adds a high tension squeal
+        if(_battleTier==='hard' && beat%8===0){
+          const h=ctx.createOscillator(), hg=ctx.createGain();
+          h.type='sawtooth'; h.frequency.value=880;
+          hg.gain.setValueAtTime(.02,now); hg.gain.exponentialRampToValueAtTime(.001,now+(step/1000)*4);
+          h.connect(hg); hg.connect(ctx.destination);
+          h.start(now); h.stop(now+(step/1000)*4.5); _musicNodes.push(h);
+        }
+      }
+
+      // Low drone on every bar (every 16 steps)
+      if(beat===0){
+        const d=ctx.createOscillator(), dg=ctx.createGain();
+        d.type='triangle'; d.frequency.value=55; // A1
+        dg.gain.setValueAtTime(0,now);
+        dg.gain.linearRampToValueAtTime(.07,now+(step/1000)*2);
+        dg.gain.exponentialRampToValueAtTime(.001,now+(step/1000)*16);
+        d.connect(dg); dg.connect(ctx.destination);
+        d.start(now); d.stop(now+(step/1000)*16.5); _musicNodes.push(d);
+      }
+    }catch(e){}
+    _battleBeat++;
+    // Clean up old nodes to avoid memory creep
+    if(_battleBeat%32===0) _musicNodes=_musicNodes.filter(n=>{ try{return n.context.currentTime<n._stopTime||false;}catch(e){return false;} });
+    if(_musicRunning) _musicLoop=setTimeout(tick, step);
+  }
+  tick();
+}
+
+function escalateMusicTier(tier){
+  _battleTier=tier;
+  _battleBeat=0; // reset to bar start for clean transition
+}
+
+// ════════════════════════════════════════════════
+//  BREWING — DATA
+// ════════════════════════════════════════════════
+const INGREDIENTS = [
+  {id:'moonstone',   name:'Moonstone',      emoji:'🔵', color:'#4169E1'},
+  {id:'dragonblood', name:"Dragon's Blood", emoji:'🔴', color:'#DC143C'},
+  {id:'fireseeds',   name:'Fire Seeds',     emoji:'🟠', color:'#FF8C00'},
+  {id:'ashwinder',   name:'Ashwinder Egg',  emoji:'🟡', color:'#FFD700'},
+  {id:'boomslang',   name:'Boomslang Skin', emoji:'🟢', color:'#228B22'},
+  {id:'unicorn',     name:'Unicorn Hair',   emoji:'⚪', color:'#C0C0C0'},
+  {id:'stardust',    name:'Stardust',       emoji:'✨', color:'#9370DB'},
+  {id:'flobberworm', name:'Flobberworm',    emoji:'🟤', color:'#8B4513'},
+  {id:'wolfsbane',   name:'Wolfsbane',      emoji:'🌿', color:'#2E8B57'},
+  {id:'lacewing',    name:'Lacewing Flies', emoji:'🦋', color:'#20B2AA'},
+  {id:'jobberknoll', name:'Jobberknoll',    emoji:'🪶', color:'#DAA520'},
+  {id:'mandrake',    name:'Mandrake Root',  emoji:'🫚', color:'#8FBC8F'},
+];
+
+// 9 player spells:  3 easy(3-seq) · 4 medium(5-seq) · 2 hard(7-seq)
+const SPELLS = [
+  {id:'lumos',        phase:'easy',   name:'Lumos Maxima',         emoji:'💡', seq:['moonstone','stardust','unicorn']},
+  {id:'incendio',     phase:'easy',   name:'Incendio Furio',        emoji:'🔥', seq:['fireseeds','dragonblood','ashwinder']},
+  {id:'wingardium',   phase:'easy',   name:'Wingardium Leviosa',    emoji:'🕊️', seq:['ashwinder','moonstone','jobberknoll']},
+  {id:'polyjuice',    phase:'medium', name:'Polyjuice Brew',        emoji:'🦊', seq:['boomslang','lacewing','flobberworm','mandrake','unicorn']},
+  {id:'felix',        phase:'medium', name:'Felix Felicis',         emoji:'🍀', seq:['moonstone','fireseeds','stardust','unicorn','jobberknoll']},
+  {id:'veritaserum',  phase:'medium', name:'Veritaserum Veil',      emoji:'🔮', seq:['moonstone','lacewing','stardust','unicorn','ashwinder']},
+  {id:'amortentia',   phase:'medium', name:'Amortentia Shield',     emoji:'💕', seq:['dragonblood','moonstone','flobberworm','stardust','wolfsbane']},
+  {id:'expelliarmus', phase:'hard',   name:'Grand Expelliarmus',    emoji:'⚡', seq:['moonstone','unicorn','stardust','dragonblood','ashwinder','jobberknoll','lacewing']},
+  {id:'lovespell',    phase:'hard',   name:'Reverse Avada Kedavra', emoji:'❤️', seq:['dragonblood','fireseeds','wolfsbane','boomslang','mandrake','lacewing','stardust']},
+];
+
+const PHASES = [
+  {id:'easy',   label:'EASY PHASE',   spellIds:['lumos','incendio','wingardium']},
+  {id:'medium', label:'MEDIUM PHASE', spellIds:['polyjuice','felix','veritaserum','amortentia']},
+  {id:'hard',   label:'HARD PHASE',   spellIds:['expelliarmus','lovespell']},
+];
+
+// ─────────────────────────────────────────────────────────────
+// Voldemort's 5 attack rounds
+//   tier: 'easy'(R1,R2) | 'medium'(R3,R4) | 'hard'(R5)
+//   HP bar = 5 segments; one segment lost per completed round
+//   Voldemort ONLY dies after the 5th round is blocked
+// ─────────────────────────────────────────────────────────────
+const VOLD_ROUNDS = [
+  {
+    tier:'easy',
+    roundLabel:'Round 1 of 5 — Easy Spell',
+    voldSpellName:'Serpensortia',
+    voldSpellEmoji:'🐍',
+    voldSeq:['dragonblood','flobberworm','boomslang'],
+    counterSpellId:'lumos',
+    // shown at start of this round (first time we see easy tier)
+    tierDialogue: '"Heh… a child plays at magic.\nLet me show you what a real wizard does — \nSerpensortia!"',
+    tierLabel: '⚡ EASY SPELLS',
+    tierClass: 'easy-pt',
+    isNewTier: true,
+  },
+  {
+    tier:'easy',
+    roundLabel:'Round 2 of 5 — Easy Spell',
+    voldSpellName:'Crucio',
+    voldSpellEmoji:'😱',
+    voldSeq:['mandrake','lacewing','wolfsbane'],
+    counterSpellId:'incendio',
+    tierDialogue: '"Still standing? How… amusing.\nLet\'s see how you handle this — Crucio!"',
+    tierLabel: '⚡ EASY SPELLS',
+    tierClass: 'easy-pt',
+    isNewTier: false,
+  },
+  {
+    tier:'medium',
+    roundLabel:'Round 3 of 5 — Medium Spell',
+    voldSpellName:'Fiendfyre',
+    voldSpellEmoji:'🔥',
+    voldSeq:['stardust','lacewing','ashwinder','unicorn','moonstone'],
+    counterSpellId:'amortentia',
+    tierDialogue: '"Enough games. You have survived my warm-up.\nNow feel true power — FIENDFYRE!"',
+    tierLabel: '🔥 MEDIUM SPELLS',
+    tierClass: 'medium-pt',
+    isNewTier: true,
+  },
+  {
+    tier:'medium',
+    roundLabel:'Round 4 of 5 — Medium Spell',
+    voldSpellName:'Sectumsempra',
+    voldSpellEmoji:'🩸',
+    voldSeq:['wolfsbane','flobberworm','moonstone','boomslang','ashwinder'],
+    counterSpellId:'felix',
+    tierDialogue: '"Your luck runs thin, Potter.\nNo potion can save you from — Sectumsempra!"',
+    tierLabel: '🔥 MEDIUM SPELLS',
+    tierClass: 'medium-pt',
+    isNewTier: false,
+  },
+  {
+    tier:'hard',
+    roundLabel:'Round 5 of 5 — FINAL SPELL',
+    voldSpellName:'Avada Kedavra',
+    voldSpellEmoji:'☠️',
+    voldSeq:['jobberknoll','unicorn','fireseeds','moonstone','lacewing','dragonblood','wolfsbane'],
+    counterSpellId:'expelliarmus',
+    tierDialogue: '"I am Lord Voldemort. There is no counter.\nYou will join your parents in death — \nAVADA KEDAVRA!!!"',
+    tierLabel: '💀 KILLING CURSE',
+    tierClass: 'hard-pt',
+    isNewTier: true,
+  },
+];
+
+const FAIL_FX = [
+  {emoji:'🐸',title:'Ribbit!',desc:'You\'ve been transfigured into a frog!\nProfessor McGonagall cannot stop laughing.'},
+  {emoji:'💥',title:'KABOOM!',desc:'The cauldron EXPLODES!\nSoot covers the entire classroom. Filch is furious.'},
+  {emoji:'🐍',title:'Snake Hair!',desc:'Your hair has become a nest of tiny snakes.\nAt least they\'re friendly... mostly.'},
+  {emoji:'🦆',title:'Quack!',desc:'You\'ve sprouted duck feathers and a bright orange beak.\nVery dignified indeed.'},
+  {emoji:'🌈',title:'Rainbow Skin!',desc:'You\'re glowing in seven colours at once.\nNeville says you look "quite festive".'},
+  {emoji:'👴',title:'Aged 100 Years!',desc:'You\'ve aged a century in an instant!\nMadam Pomfrey has never seen anything like it.'},
+  {emoji:'🐱',title:'Meow!',desc:'You\'ve partially turned into a cat.\nYour ears are enormous and you keep hissing.'},
+  {emoji:'💤',title:'Sleeping Draft!',desc:'Zzzzz... you\'ve put yourself to sleep.\nHermione is desperately trying to wake you.'},
+  {emoji:'🎵',title:'Singing Hex!',desc:'You can only communicate through song!\nEveryone is simultaneously impressed and annoyed.'},
+  {emoji:'🔄',title:'Spinning Curse!',desc:'You\'re spinning uncontrollably!\nThe room is definitely not moving — it\'s you.'},
+  {emoji:'🧲',title:'Magnetic Mishap!',desc:'All nearby metal objects fly towards you!\nFlitwick\'s spectacles are on your nose.'},
+  {emoji:'🐢',title:'Slow-Motion Potion!',desc:'Time has slowed to a crawl for you.\nEveryone seems to be moving terribly fast...'},
+];
+
+// ════════════════════════════════════════════════
+//  BREWING — STATE
+// ════════════════════════════════════════════════
+let phaseIdx=0, spellIdxInPhase=0, currentSlot=0;
+let slotStates=[], unlockedSpells=[], inputLocked=false, ingPositions={};
+
+// ════════════════════════════════════════════════
+//  BATTLE — STATE
+// ════════════════════════════════════════════════
+let playerLives=3;    // max 3 hits then dead
+let voldHP=5;         // 5 rounds = 5 HP; one lost per round completion
+let btRound=0;        // which VOLD_ROUNDS index (0-4)
+let btVoldStep=0;
+let btPlayerStep=0;
+let btLocked=false;
+let btTimerInterval=null;
+let btTimerSec=5;
+const TIMER_MAX=5;
+
+// ════════════════════════════════════════════════
+//  BACKGROUND MUSIC STATE
+// ════════════════════════════════════════════════
+let _musicNodes=[];    // active oscillator/gain nodes for music
+let _musicRunning=false;
+let _musicLoop=null;
+
+// ════════════════════════════════════════════════
+//  STARS
+// ════════════════════════════════════════════════
+function createStars(){
+  const c=document.getElementById('stars');
+  for(let i=0;i<140;i++){
+    const s=document.createElement('div'); s.className='star';
+    const sz=Math.random()*2.5+.4;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${(Math.random()*3+2).toFixed(1)}s;--dl:${(Math.random()*3).toFixed(1)}s;`;
+    c.appendChild(s);
+  }
+}
+
+// ════════════════════════════════════════════════
+//  DEV MODE — toggle on title screen to skip brewing
+// ════════════════════════════════════════════════
+let DEV_MODE = false;
+
+function toggleDevMode(){
+  DEV_MODE = !DEV_MODE;
+  const wrap  = document.getElementById('dev-toggle-wrap');
+  const label = document.getElementById('dev-label');
+  const badge = document.getElementById('dev-badge');
+  if(DEV_MODE){
+    wrap.classList.add('on');
+    label.textContent = 'All Spells Unlocked';
+    badge.textContent = 'DEV ON';
+  } else {
+    wrap.classList.remove('on');
+    label.textContent = 'All Spells Locked';
+    badge.textContent = 'DEV';
+  }
+}
+
+// ════════════════════════════════════════════════
+//  GAME START
+// ════════════════════════════════════════════════
+function startGame(){
+  document.getElementById('title-screen').style.display='none';
+
+  if(DEV_MODE){
+    // Pre-unlock every spell and jump straight to Voldemort battle
+    unlockedSpells = SPELLS.map(s=>s.id);
+    phaseIdx = PHASES.length - 1;          // put phase pointer at end
+    spellIdxInPhase = PHASES[phaseIdx].spellIds.length - 1;
+    // Show battle-btn as ready (in case player returns somehow)
+    const bb=document.getElementById('battle-btn');
+    if(bb){ bb.classList.add('ready'); bb.textContent='⚔️ Face Voldemort'; }
+    // Go straight to revise + battle
+    openBattle();
+    return;
+  }
+
+  // Normal flow
+  document.getElementById('main-game').style.display='flex';
+  buildIngredients(); buildSpellbook(); buildSteam(); loadCurrentSpell();
+  setTimeout(startBrewMusic, 300); // start after short delay to let AudioContext init
+}
+
+function buildIngredients(){
+  const g=document.getElementById('ing-grid'); g.innerHTML='';
+  INGREDIENTS.forEach(ing=>{
+    const d=document.createElement('div'); d.className='ing-tile'; d.id=`ing-${ing.id}`;
+    d.onclick=()=>selectIngredient(ing);
+    d.innerHTML=`<span class="ing-icon">${ing.emoji}</span><span class="ing-label">${ing.name}</span>`;
+    g.appendChild(d);
+  });
+}
+
+function buildSteam(){
+  const w=document.getElementById('steam-wrap');
+  for(let i=0;i<4;i++){
+    const p=document.createElement('div'); p.className='steam-puff';
+    const sz=Math.random()*18+8;
+    p.style.cssText=`width:${sz}px;height:${sz}px;left:${15+Math.random()*60}%;--sd:${(Math.random()*1.5+1.5).toFixed(1)}s;--sdl:${(Math.random()*2).toFixed(1)}s;--sx:${((Math.random()-.5)*28).toFixed(0)}px;`;
+    w.appendChild(p);
+  }
+}
+
+function buildSpellbook(){
+  const sb=document.getElementById('spellbook'); sb.innerHTML='';
+  SPELLS.forEach(spell=>{
+    const unlocked=unlockedSpells.includes(spell.id);
+    const d=document.createElement('div');
+    d.className=`spell-slot ${spell.phase}${unlocked?' unlocked':''}`;
+    if(unlocked){
+      const seqHtml=spell.seq.map(id=>`<span title="${INGREDIENTS.find(i=>i.id===id).name}" style="font-size:.82rem">${INGREDIENTS.find(i=>i.id===id).emoji}</span>`).join('<span style="color:rgba(201,168,76,.35);font-size:.48rem">›</span>');
+      d.innerHTML=`<span class="spell-diff">${spell.phase.toUpperCase()}</span><div class="spell-name">${spell.emoji} ${spell.name}</div><div class="spell-seq">${seqHtml}</div>`;
+      d.onclick=()=>{
+        const lines=spell.seq.map(id=>`${INGREDIENTS.find(i=>i.id===id).emoji} ${INGREDIENTS.find(i=>i.id===id).name}`).join('\n→ ');
+        showBrewEffect(spell.emoji,spell.name,`Formula:\n${lines}`,'success',false);
+      };
+    }else{
+      d.innerHTML=`<span class="spell-diff">${spell.phase.toUpperCase()}</span><div class="spell-name" style="color:rgba(255,255,255,.22)">??? Secret Spell</div><div class="spell-locked">Brew the right combination…</div>`;
+    }
+    sb.appendChild(d);
+  });
+}
+
+// ════════════════════════════════════════════════
+//  BREWING LOGIC
+// ════════════════════════════════════════════════
+function curPhase(){ return PHASES[phaseIdx]; }
+function curSpell(){
+  const p=curPhase(); if(!p)return null;
+  return SPELLS.find(s=>s.id===p.spellIds[spellIdxInPhase])||null;
+}
+
+function loadCurrentSpell(){
+  const phase=curPhase(), spell=curSpell(); if(!phase||!spell)return;
+  currentSlot=0; slotStates=Array(spell.seq.length).fill('empty');
+  ingPositions={}; inputLocked=false;
+  const badge=document.getElementById('phase-badge');
+  badge.textContent=phase.label; badge.className=`phase-badge phase-${phase.id}`;
+  document.getElementById('grid-label').textContent=`🔒 Secret Spell #${unlockedSpells.length+1}`;
+  document.getElementById('grid-sub').textContent=`Fill each of the ${spell.seq.length} slots with the correct ingredient`;
+  document.getElementById('center-hint').textContent=phaseHint(phase.id,spell.seq.length);
+  renderGrid(); renderPhaseDots(); updateIngBadges(); updateCauldronColor([]);
+}
+
+function phaseHint(ph,len){
+  if(ph==='easy')   return `📗 Easy — ${len} ingredients. Numbers appear on each tile you pick!`;
+  if(ph==='medium') return `📘 Medium — ${len} ingredients. Order matters! Watch the numbers.`;
+  return `📕 Hard — ${len} ingredients. Master-level brewing — every slot counts!`;
+}
+
+function renderGrid(){
+  const spell=curSpell(); if(!spell)return;
+  const g=document.getElementById('sequence-grid'); g.innerHTML='';
+  spell.seq.forEach((ingId,i)=>{
+    if(i>0){const a=document.createElement('span');a.className='cell-arrow';a.textContent='→';g.appendChild(a);}
+    const cell=document.createElement('div'), st=slotStates[i], ing=INGREDIENTS.find(x=>x.id===ingId);
+    const num=document.createElement('span'); num.className='cell-num'; num.textContent=i+1;
+    if(st==='correct'){
+      cell.className='grid-cell correct';
+      cell.innerHTML=`<span style="font-size:1.4rem">${ing.emoji}</span><span class="cell-name-lbl">${ing.name}</span>`;
+      const t=document.createElement('span'); t.style.cssText='position:absolute;bottom:2px;right:4px;font-size:.55rem;color:var(--green);'; t.textContent='✓'; cell.appendChild(t);
+    }else if(st==='wrong'){
+      cell.className='grid-cell wrong'; cell.innerHTML=`<span style="font-size:1.4rem">✕</span>`;
+    }else if(i===currentSlot){
+      cell.className='grid-cell active-slot'; cell.innerHTML=`<span style="font-size:.6rem;color:rgba(201,168,76,.65);font-style:italic;text-align:center;">pick<br>ingred.</span>`;
+    }else{
+      cell.className='grid-cell future'; cell.innerHTML=`<span style="font-size:.95rem;color:rgba(255,255,255,.1)">?</span>`;
+    }
+    cell.appendChild(num); g.appendChild(cell);
+  });
+}
+
+function renderPhaseDots(){
+  const c=document.getElementById('phase-dots'); c.innerHTML='';
+  SPELLS.forEach((s,i)=>{
+    const d=document.createElement('div'); d.className='phase-dot';
+    if(unlockedSpells.includes(s.id)) d.classList.add('done');
+    else if(i===unlockedSpells.length) d.classList.add('current');
+    d.title=s.name; c.appendChild(d);
+  });
+}
+
+function updateIngBadges(){
+  INGREDIENTS.forEach(ing=>{
+    const tile=document.getElementById(`ing-${ing.id}`); if(!tile)return;
+    tile.querySelectorAll('.ing-seq-badge').forEach(b=>b.remove());
+    const pos=ingPositions[ing.id];
+    if(pos&&pos.length>0){
+      const b=document.createElement('span');
+      b.className='ing-seq-badge'+(pos.length>1?' multi':'');
+      b.textContent=pos.join(','); tile.appendChild(b);
+    }
+  });
+}
+
+function selectIngredient(ing){
+  const spell=curSpell(); if(!spell||inputLocked)return;
+  if(currentSlot>=spell.seq.length)return;
+  sndIng(ing.id);
+  inputLocked=true;
+  const correctId=spell.seq[currentSlot], ok=ing.id===correctId;
+  const tile=document.getElementById(`ing-${ing.id}`);
+  tile.style.transform='scale(.82)'; setTimeout(()=>tile.style.transform='',140);
+  if(!ingPositions[ing.id]) ingPositions[ing.id]=[];
+  ingPositions[ing.id].push(currentSlot+1); updateIngBadges();
+  if(ok){
+    slotStates[currentSlot]='correct'; spawnParticle(ing.emoji);
+    updateCauldronColor(slotStates.map((s,idx)=>s==='correct'?spell.seq[idx]:null).filter(Boolean));
+    currentSlot++; renderGrid();
+    if(currentSlot===spell.seq.length){ inputLocked=true; sndOk(); setTimeout(()=>spellUnlocked(spell),350); }
+    else{
+      document.getElementById('center-hint').textContent=`✅ Correct! Slot ${currentSlot} done — now pick ingredient #${currentSlot+1}!`;
+      document.getElementById('ing-hint').textContent=`Slot ${currentSlot+1} of ${spell.seq.length} is glowing`;
+      inputLocked=false;
+    }
+  }else{
+    slotStates[currentSlot]='wrong'; renderGrid(); updateCauldronColor([]); sndFail();
+    const fx=FAIL_FX[Math.floor(Math.random()*FAIL_FX.length)];
+    setTimeout(()=>showBrewEffect(fx.emoji,fx.title,fx.desc,'fail',false),380);
+  }
+}
+
+function spellUnlocked(spell){
+  unlockedSpells.push(spell.id);
+  document.getElementById('sc').textContent=unlockedSpells.length;
+  buildSpellbook(); renderPhaseDots();
+  for(let i=0;i<16;i++) setTimeout(()=>spawnParticle(['✨','⭐','🌟','💫','🎉'][Math.floor(Math.random()*5)]),i*55);
+  const seq=spell.seq.map(id=>INGREDIENTS.find(i=>i.id===id).emoji).join(' → ');
+  if(unlockedSpells.length>=9){
+    showBrewEffect(spell.emoji,`✨ Spell Unlocked!\n${spell.name}`,`${seq}\n\n🏆 All 9 spells discovered!\nYou are ready to face Voldemort!`,'success',true);
+  }else{
+    showBrewEffect(spell.emoji,`✨ Spell Unlocked!\n${spell.name}`,seq,'success',false);
+  }
+}
+
+function advanceSpell(){
+  spellIdxInPhase++;
+  if(spellIdxInPhase>=curPhase().spellIds.length){ phaseIdx++; spellIdxInPhase=0; }
+  loadCurrentSpell();
+}
+
+function updateCauldronColor(ids){
+  const liq=document.getElementById('brew-liquid'), top=document.getElementById('brew-top');
+  if(!ids||!ids.length){liq.style.background='rgba(0,50,20,.6)';liq.style.boxShadow='none';top.setAttribute('fill','#1a4a1a');return;}
+  const cols=ids.map(id=>INGREDIENTS.find(i=>i.id===id)?.color||'#888');
+  liq.style.background=`linear-gradient(135deg,${cols.join(',')})`;
+  liq.style.boxShadow=`0 0 18px ${cols[cols.length-1]}88`;
+  top.setAttribute('fill',cols[cols.length-1]);
+}
+
+function spawnParticle(emoji){
+  const p=document.createElement('div'); p.className='particle'; p.textContent=emoji;
+  p.style.cssText=`left:45%;top:50%;--px:${(Math.random()-.5)*180}px;--py:${-(Math.random()*160+40)}px;--pd:${(Math.random()*.5+.8).toFixed(1)}s;`;
+  document.body.appendChild(p); setTimeout(()=>p.remove(),1500);
+}
+
+// ════════════════════════════════════════════════
+//  BREW EFFECT OVERLAY
+// ════════════════════════════════════════════════
+let _brewSuccess=false, _brewFinal=false;
+function showBrewEffect(emoji,title,desc,type,isFinal){
+  document.getElementById('eff-emoji').textContent=emoji;
+  document.getElementById('eff-title').textContent=title;
+  document.getElementById('eff-desc').textContent=desc;
+  document.getElementById('eff-card').className=`eff-card ${type}`;
+  document.getElementById('eff-btn').textContent=type==='success'?(isFinal?'⚔️ Fight Voldemort!':'Well Done!'):' Try Again';
+  _brewSuccess=(type==='success'); _brewFinal=isFinal;
+  document.getElementById('effect-overlay').classList.add('active');
+}
+function closeEffect(){
+  document.getElementById('effect-overlay').classList.remove('active');
+  if(_brewFinal){ openBattle(); }
+  else if(_brewSuccess){ advanceSpell(); }
+  else{
+    const spell=curSpell();
+    if(spell){ currentSlot=0; slotStates=Array(spell.seq.length).fill('empty'); ingPositions={};
+      updateCauldronColor([]); renderGrid(); updateIngBadges();
+      document.getElementById('center-hint').textContent=phaseHint(curPhase().id,spell.seq.length);
+      document.getElementById('ing-hint').textContent='Tap an ingredient to fill the glowing slot →'; }
+    inputLocked=false;
+  }
+  _brewSuccess=false; _brewFinal=false;
+}
+
+// ════════════════════════════════════════════════
+//  BATTLE BUTTON (enabled only after all 9)
+// ════════════════════════════════════════════════
+function tryOpenBattle(){
+  if(unlockedSpells.length<9){ return; }
+  openBattle();
+}
+
+// ════════════════════════════════════════════════
+//  SPELL REFERENCE (ℹ panel)
+// ════════════════════════════════════════════════
+function toggleSpellRef(){
+  const panel=document.getElementById('spell-ref');
+  if(!panel.classList.contains('active')){
+    const list=document.getElementById('sr-list'); list.innerHTML='';
+    unlockedSpells.forEach(id=>{
+      const spell=SPELLS.find(s=>s.id===id); if(!spell)return;
+      const row=document.createElement('div'); row.className='sr-spell-row';
+      const seqHtml=spell.seq.map(ingId=>{
+        const ing=INGREDIENTS.find(i=>i.id===ingId);
+        return `<span class="sr-chip" title="${ing.name}">${ing.emoji}</span>`;
+      }).join('<span style="color:rgba(201,168,76,.35);font-size:.48rem;padding:0 1px">›</span>');
+      row.innerHTML=`<span class="sr-icon">${spell.emoji}</span>
+        <div class="sr-info"><div class="sr-name">${spell.name}</div><div class="sr-seq">${seqHtml}</div></div>`;
+      list.appendChild(row);
+    });
+  }
+  panel.classList.toggle('active');
+}
+
+// ════════════════════════════════════════════════
+//  BATTLE — MAIN
+// ════════════════════════════════════════════════
+
+/* ── Revise screen (pre-battle) ── */
+let _reviseTimer=null;
+let _reviseSec=15;
+
+function openBattle(){
+  playerLives=3; voldHP=5; btRound=0; btLocked=false;
+  stopMusic();
+  document.getElementById('main-game').style.display='none';
+  showReviseScreen();
+}
+
+function showReviseScreen(){
+  // Build spell grid
+  const grid=document.getElementById('revise-spell-grid'); grid.innerHTML='';
+  unlockedSpells.forEach(id=>{
+    const spell=SPELLS.find(s=>s.id===id); if(!spell)return;
+    const row=document.createElement('div'); row.className='revise-spell-row';
+    const seqHtml=spell.seq.map(ingId=>{
+      const ing=INGREDIENTS.find(i=>i.id===ingId);
+      return `<span class="revise-chip" title="${ing.name}">${ing.emoji}</span><span class="revise-ing-name">${ing.name.split(' ')[0]}</span>`;
+    }).join('<span style="color:rgba(201,168,76,.35);font-size:.5rem;padding:0 2px">→</span>');
+    row.innerHTML=`<span class="revise-spell-icon">${spell.emoji}</span>
+      <div class="revise-spell-info">
+        <div class="revise-spell-name">${spell.name}</div>
+        <div class="revise-spell-seq">${seqHtml}</div>
+      </div>`;
+    grid.appendChild(row);
+  });
+
+  // Show screen
+  document.getElementById('revise-screen').style.display='flex';
+
+  // Countdown timer
+  _reviseSec=15;
+  document.getElementById('revise-countdown').textContent=_reviseSec;
+  _reviseTimer=setInterval(()=>{
+    _reviseSec--;
+    const el=document.getElementById('revise-countdown');
+    if(el) el.textContent=_reviseSec;
+    if(_reviseSec<=0){ clearInterval(_reviseTimer); _reviseTimer=null; closeReviseAndFight(); }
+  },1000);
+}
+
+function closeReviseAndFight(){
+  if(_reviseTimer){ clearInterval(_reviseTimer); _reviseTimer=null; }
+  document.getElementById('revise-screen').style.display='none';
+  document.getElementById('battle-screen').style.display='flex';
+  renderLives();
+  startBattleMusic('easy');
+  startRound();
+}
+
+/* ── Pause modal (shown after a hit OR after a round ends) ── */
+// type: 'hit' | 'round'
+// onResume: function to call when player dismisses
+let _pauseResume=null;
+
+function showPauseModal(type, titleText, descText, emojiText, onResume){
+  stopTimer(); // freeze the battle timer while paused
+
+  // Build spellbook list inside modal
+  const list=document.getElementById('pause-sb-list'); list.innerHTML='';
+  unlockedSpells.forEach(id=>{
+    const spell=SPELLS.find(s=>s.id===id); if(!spell)return;
+    const row=document.createElement('div'); row.className='pause-sb-row';
+    const seqHtml=spell.seq.map(ingId=>{
+      const ing=INGREDIENTS.find(i=>i.id===ingId);
+      return `<span class="pause-chip" title="${ing.name}">${ing.emoji}</span>`;
+    }).join('<span style="color:rgba(201,168,76,.3);font-size:.45rem;padding:0 1px">›</span>');
+    row.innerHTML=`<span class="pause-sb-icon">${spell.emoji}</span>
+      <div class="pause-sb-info">
+        <div class="pause-sb-name">${spell.name}</div>
+        <div class="pause-sb-seq">${seqHtml}</div>
+      </div>`;
+    list.appendChild(row);
+  });
+
+  // Set card style
+  const card=document.getElementById('pause-card');
+  card.className='pause-card '+(type==='hit'?'hit-card':'round-card');
+  document.getElementById('pause-emoji').textContent=emojiText;
+  document.getElementById('pause-title').textContent=titleText;
+  document.getElementById('pause-desc').textContent=descText;
+
+  // Build button(s)
+  const btnRow=document.getElementById('pause-btn-row'); btnRow.innerHTML='';
+  const resumeBtn=document.createElement('button'); resumeBtn.className='btn';
+  resumeBtn.style.cssText='font-size:.8rem;padding:.5rem 1.6rem;';
+  resumeBtn.textContent=type==='hit'?'⚔️ Continue Fighting!':'⚔️ Next Spell!';
+  resumeBtn.onclick=closePauseModal;
+  btnRow.appendChild(resumeBtn);
+
+  _pauseResume=onResume;
+  document.getElementById('pause-modal').classList.add('active');
+}
+
+function closePauseModal(){
+  document.getElementById('pause-modal').classList.remove('active');
+  if(_pauseResume){ const fn=_pauseResume; _pauseResume=null; fn(); }
+}
+
+function renderLives(){
+  // Player (3 hearts max)
+  const ph=document.getElementById('player-hearts'); ph.innerHTML='';
+  for(let i=0;i<3;i++){
+    const h=document.createElement('span'); h.className='heart'+(i>=playerLives?' lost':'');
+    h.textContent='❤️'; ph.appendChild(h);
+  }
+  // Voldemort — 5 HP segments (one per round)
+  const vh=document.getElementById('vold-hearts'); vh.innerHTML='';
+  for(let i=0;i<5;i++){
+    const seg=document.createElement('div');
+    seg.className='vold-seg'+(i>=voldHP?' seg-dead':'');
+    seg.id=`vseg-${i}`;
+    vh.appendChild(seg);
+  }
+}
+
+function animateVoldHPLoss(){
+  // Find the rightmost alive segment and animate it dying
+  const idx=voldHP; // voldHP was already decremented before this call
+  const seg=document.getElementById(`vseg-${idx}`);
+  if(seg){ seg.classList.add('seg-dying'); setTimeout(()=>seg.classList.add('seg-dead'),600); }
+}
+
+function startRound(){
+  if(btRound>=VOLD_ROUNDS.length){ endBattle(true); return; }
+  const round=VOLD_ROUNDS[btRound];
+  const counterSpell=SPELLS.find(s=>s.id===round.counterSpellId);
+  btVoldStep=0; btPlayerStep=0; btLocked=false;
+
+  // Update UI labels
+  document.getElementById('round-pill').textContent=round.roundLabel;
+  document.getElementById('vold-spell-name').textContent=`${round.voldSpellEmoji} ${round.voldSpellName}`;
+  document.getElementById('vold-spell-prog').textContent=`${round.voldSeq.length} ingredients`;
+  document.getElementById('player-spell-name').textContent=`${counterSpell.emoji} ${counterSpell.name}`;
+  document.getElementById('player-spell-prog').textContent=`${counterSpell.seq.length} ingredients to cast`;
+
+  buildSeqTrack(round, counterSpell);
+  document.getElementById('pick-section').style.display='none';
+
+  // Show phase-transition card for new tier OR every round
+  showPhaseTransition(round, counterSpell, ()=>{
+    setBtLog(`🐍 Voldemort casts ${round.voldSpellEmoji} ${round.voldSpellName}! Counter with ${counterSpell.emoji} ${counterSpell.name}!`,'info');
+    setTimeout(()=>doStep(), 600);
+  });
+}
+
+// ── Phase transition overlay ──
+let _ptOnClose=null;
+function showPhaseTransition(round, counterSpell, onClose){
+  const card=document.getElementById('pt-card');
+  card.className='pt-card '+round.tierClass;
+  document.getElementById('pt-face').textContent=round.voldSpellEmoji;
+  document.getElementById('pt-tier-badge').textContent=round.tierLabel;
+  document.getElementById('pt-spell-row').textContent=
+    `Voldemort casts: ${round.voldSpellEmoji} ${round.voldSpellName}  (${round.voldSeq.length} ingredients)`;
+  document.getElementById('pt-counter-row').textContent=
+    `⚡ Quick! Use your ${counterSpell.emoji} ${counterSpell.name} to block it!`;
+
+  // Typewriter-style dialogue
+  const dialogueEl=document.getElementById('pt-dialogue');
+  dialogueEl.innerHTML='';
+  const text=round.tierDialogue;
+  let i=0;
+  function typeChar(){
+    if(i<text.length){ dialogueEl.innerHTML=text.slice(0,++i)+'<span class="pt-cursor">|</span>'; setTimeout(typeChar,22); }
+    else { dialogueEl.innerHTML=text; }
+  }
+  typeChar();
+
+  _ptOnClose=onClose;
+  document.getElementById('phase-transition').classList.add('active');
+}
+
+function closePhaseTransition(){
+  document.getElementById('phase-transition').classList.remove('active');
+  if(_ptOnClose){ const fn=_ptOnClose; _ptOnClose=null; fn(); }
+}
+
+// ── Build the visual track showing both spell sequences ──
+function buildSeqTrack(round, counterSpell){
+  const track=document.getElementById('seq-track'); track.innerHTML='';
+  const vLen=round.voldSeq.length, pLen=counterSpell.seq.length;
+
+  // Voldemort cells
+  for(let i=0;i<vLen;i++){
+    if(i>0){const a=document.createElement('span');a.style.cssText='color:rgba(200,0,0,.4);font-size:.7rem;flex-shrink:0;align-self:center;';a.textContent='→';track.appendChild(a);}
+    const cell=document.createElement('div');
+    cell.className='dc v-hidden'; cell.id=`vc-${i}`;
+    cell.innerHTML=`<span style="font-size:1rem;color:rgba(255,255,255,.08)">?</span>`;
+    const num=document.createElement('span'); num.className='dc-num'; num.textContent=i+1; cell.appendChild(num);
+    const lbl=document.createElement('div'); lbl.className='dc-lbl'; lbl.textContent='Vold'; cell.appendChild(lbl);
+    track.appendChild(cell);
+  }
+
+  // VS divider
+  const vs=document.createElement('span'); vs.className='vs-div'; vs.textContent='VS'; track.appendChild(vs);
+
+  // Player cells
+  for(let i=0;i<pLen;i++){
+    if(i>0){const a=document.createElement('span');a.style.cssText='color:rgba(0,180,80,.3);font-size:.7rem;flex-shrink:0;align-self:center;';a.textContent='→';track.appendChild(a);}
+    const cell=document.createElement('div');
+    cell.className='dc p-pending'; cell.id=`pc-${i}`;
+    cell.innerHTML=`<span style="font-size:1rem;color:rgba(201,168,76,.1)">?</span>`;
+    const num=document.createElement('span'); num.className='dc-num'; num.textContent=i+1; cell.appendChild(num);
+    const lbl=document.createElement('div'); lbl.className='dc-lbl'; lbl.textContent='You'; cell.appendChild(lbl);
+    track.appendChild(cell);
+  }
+}
+
+// ── One step = reveal Voldemort's ingredient, then ask player for theirs ──
+function doStep(){
+  if(btLocked)return;
+  const round=VOLD_ROUNDS[btRound];
+  const counterSpell=SPELLS.find(s=>s.id===round.counterSpellId);
+
+  // Check if we've exhausted all steps
+  if(btVoldStep>=round.voldSeq.length && btPlayerStep>=counterSpell.seq.length){
+    // Round complete
+    roundComplete(); return;
+  }
+
+  // Step A: If Voldemort has a next ingredient to reveal, show it
+  if(btVoldStep<round.voldSeq.length){
+    const ingId=round.voldSeq[btVoldStep];
+    const ing=INGREDIENTS.find(i=>i.id===ingId);
+    sndVoldIng(ingId);
+
+    // Mark the active vold cell
+    const activeCell=document.getElementById(`vc-${btVoldStep}`);
+    if(activeCell){
+      // Un-highlight previous active
+      if(btVoldStep>0){
+        const prev=document.getElementById(`vc-${btVoldStep-1}`);
+        if(prev) prev.className='dc v-revealed';
+      }
+      activeCell.className='dc v-active';
+      activeCell.innerHTML=`<span style="font-size:1.3rem">${ing.emoji}</span>`;
+      const num=document.createElement('span'); num.className='dc-num'; num.textContent=btVoldStep+1; activeCell.appendChild(num);
+      const lbl=document.createElement('div'); lbl.className='dc-lbl'; lbl.textContent=ing.name.split(' ')[0]; activeCell.appendChild(lbl);
+    }
+
+    // Update vold prog
+    document.getElementById('vold-spell-prog').textContent=`Ingredient ${btVoldStep+1} of ${round.voldSeq.length}`;
+    setBtLog(`🐍 Voldemort adds: ${ing.emoji} ${ing.name} — Cast your counter ingredient!`,'warn');
+    btVoldStep++;
+  }
+
+  // Step B: If player has a next ingredient to cast, show pick buttons
+  if(btPlayerStep<counterSpell.seq.length){
+    // Mark player cell as active
+    const pc=document.getElementById(`pc-${btPlayerStep}`);
+    if(pc){
+      pc.className='dc p-active';
+      pc.innerHTML=`<span style="font-size:.55rem;color:rgba(201,168,76,.7);font-style:italic;">pick…</span>`;
+      const num=document.createElement('span'); num.className='dc-num'; num.textContent=btPlayerStep+1; pc.appendChild(num);
+      const lbl=document.createElement('div'); lbl.className='dc-lbl'; lbl.textContent='You'; pc.appendChild(lbl);
+    }
+
+    const correctIngId=counterSpell.seq[btPlayerStep];
+    const correctIng=INGREDIENTS.find(i=>i.id===correctIngId);
+
+    // Random decoy (any ingredient not equal to correct)
+    const decoy=INGREDIENTS.filter(i=>i.id!==correctIngId)[Math.floor(Math.random()*(INGREDIENTS.length-1))];
+
+    // Randomise order
+    const opts=Math.random()<.5
+      ?[{ing:correctIng,ok:true},{ing:decoy,ok:false}]
+      :[{ing:decoy,ok:false},{ing:correctIng,ok:true}];
+
+    // Show pick section
+    const ps=document.getElementById('pick-section'); ps.style.display='flex';
+    document.getElementById('pick-instruction').textContent=
+      `Pick ingredient ${btPlayerStep+1} of ${counterSpell.seq.length} for ${counterSpell.emoji} ${counterSpell.name}:`;
+
+    const row=document.getElementById('pick-row'); row.innerHTML='';
+    opts.forEach(opt=>{
+      const btn=document.createElement('button'); btn.className='pick-btn';
+      btn.innerHTML=`<span class="pb-icon">${opt.ing.emoji}</span><span class="pb-name">${opt.ing.name}</span>`;
+      btn.onclick=()=>playerPicks(opt.ok, btn, opts, correctIng, round, counterSpell);
+      row.appendChild(btn);
+    });
+
+    // Update player prog
+    document.getElementById('player-spell-prog').textContent=`Ingredient ${btPlayerStep+1} of ${counterSpell.seq.length}`;
+
+    startTimer(round, counterSpell, correctIng);
+  }
+}
+
+// ── Player picks an ingredient ──
+function playerPicks(isCorrect, clickedBtn, opts, correctIng, round, counterSpell){
+  if(btLocked)return;
+  btLocked=true;
+  stopTimer();
+  sndIng(correctIng.id);
+  document.querySelectorAll('.pick-btn').forEach(b=>b.disabled=true);
+  processPlayerChoice(isCorrect, clickedBtn, opts, correctIng, round, counterSpell);
+}
+
+function processPlayerChoice(isCorrect, clickedBtn, opts, correctIng, round, counterSpell){
+  const pc=document.getElementById(`pc-${btPlayerStep}`);
+
+  if(isCorrect){
+    clickedBtn.classList.add('c-correct');
+    sndHit(true);
+
+    if(pc){
+      pc.className='dc p-correct';
+      pc.innerHTML=`<span style="font-size:1.3rem">${correctIng.emoji}</span>`;
+      const num=document.createElement('span'); num.className='dc-num'; num.textContent=btPlayerStep+1; pc.appendChild(num);
+      const lbl=document.createElement('div'); lbl.className='dc-lbl'; lbl.textContent='✓'; pc.appendChild(lbl);
+    }
+
+    setBtLog(`✅ ${correctIng.emoji} ${correctIng.name} — correct! Keep going!`,'good');
+    fireProjectile(correctIng.emoji, 'hero', ()=>{
+      flashSprite('bt-vold', false);
+      btPlayerStep++;
+      document.getElementById('pick-section').style.display='none';
+      const prevV=document.getElementById(`vc-${btVoldStep-1}`);
+      if(prevV && prevV.classList.contains('v-active')) prevV.className='dc v-revealed';
+      btLocked=false;
+      if(btVoldStep>=round.voldSeq.length && btPlayerStep>=counterSpell.seq.length){
+        setTimeout(()=>roundComplete(),600);
+      }else{
+        setTimeout(()=>doStep(),700);
+      }
+    });
+
+  }else{
+    // Show correct
+    opts.forEach((opt,_)=>{
+      const btns=document.querySelectorAll('.pick-btn');
+      if(opts.indexOf(opt)<btns.length && opt.ok) btns[opts.indexOf(opt)].classList.add('c-correct');
+    });
+    clickedBtn.classList.add('c-wrong');
+    sndHit(false);
+    playerLives=Math.max(0,playerLives-1); renderLives();
+
+    if(pc){
+      pc.className='dc p-wrong';
+      pc.innerHTML=`<span style="font-size:1.1rem">✕</span>`;
+      const num=document.createElement('span'); num.className='dc-num'; num.textContent=btPlayerStep+1; pc.appendChild(num);
+    }
+
+    setBtLog(`❌ Wrong! Correct was ${correctIng.emoji} ${correctIng.name}. You took a hit! (${playerLives} lives left)`,'bad');
+    fireProjectile(round.voldSpellEmoji, 'vold', ()=>{
+      flashSprite('bt-hero', true);
+      if(playerLives<=0){ endBattle(false); return; }
+      btPlayerStep++;
+      document.getElementById('pick-section').style.display='none';
+      const prevV=document.getElementById(`vc-${btVoldStep-1}`);
+      if(prevV && prevV.classList.contains('v-active')) prevV.className='dc v-revealed';
+      // Show pause modal with spellbook after hit
+      const isRoundDone = btVoldStep>=round.voldSeq.length && btPlayerStep>=counterSpell.seq.length;
+      showPauseModal(
+        'hit',
+        '💥 You were hit!',
+        `Voldemort's ${correctIng.emoji} ${correctIng.name} struck you.\nYou have ${playerLives} life${playerLives===1?'':'s'} remaining.\n\nReview your spells, then keep fighting!`,
+        '🩸',
+        ()=>{
+          btLocked=false;
+          if(isRoundDone){ setTimeout(()=>roundComplete(),400); }
+          else{ setTimeout(()=>doStep(),500); }
+        }
+      );
+    });
+  }
+}
+
+// ── Timer ──
+function startTimer(round, counterSpell, correctIng){
+  btTimerSec=TIMER_MAX;
+  updateTimerUI();
+  btTimerInterval=setInterval(()=>{
+    if(btLocked){stopTimer();return;}
+    btTimerSec-=0.1;
+    updateTimerUI();
+    if(btTimerSec<=0){ stopTimer(); timedOut(round, counterSpell, correctIng); }
+  },100);
+}
+
+function stopTimer(){
+  if(btTimerInterval){ clearInterval(btTimerInterval); btTimerInterval=null; }
+}
+
+function updateTimerUI(){
+  const n=document.getElementById('timer-nums');
+  const f=document.getElementById('timer-fill');
+  const pct=Math.max(0,(btTimerSec/TIMER_MAX)*100);
+  n.textContent=Math.ceil(btTimerSec);
+  f.style.width=pct+'%';
+  const danger=pct<35;
+  n.className='timer-nums'+(danger?' danger':'');
+  f.className='timer-fill'+(danger?' danger':'');
+}
+
+function timedOut(round, counterSpell, correctIng){
+  if(btLocked)return;
+  btLocked=true;
+  document.querySelectorAll('.pick-btn').forEach(b=>b.disabled=true);
+  sndFail();
+  playerLives=Math.max(0,playerLives-1); renderLives();
+
+  const pc=document.getElementById(`pc-${btPlayerStep}`);
+  if(pc){ pc.className='dc p-timeout'; pc.innerHTML=`<span style="font-size:1.1rem">⏱️</span>`; }
+
+  setBtLog(`⏱️ Time's up! The correct ingredient was ${correctIng.emoji} ${correctIng.name}. You were struck!`,'bad');
+  fireProjectile(round.voldSpellEmoji, 'vold', ()=>{
+    flashSprite('bt-hero', true);
+    if(playerLives<=0){ endBattle(false); return; }
+    btPlayerStep++;
+    document.getElementById('pick-section').style.display='none';
+    const prevV=document.getElementById(`vc-${btVoldStep-1}`);
+    if(prevV && prevV.classList.contains('v-active')) prevV.className='dc v-revealed';
+    const isRoundDone = btVoldStep>=round.voldSeq.length && btPlayerStep>=counterSpell.seq.length;
+    showPauseModal(
+      'hit',
+      '⏱️ Too Slow!',
+      `Time ran out! The correct ingredient was ${correctIng.emoji} ${correctIng.name}.\nYou have ${playerLives} life${playerLives===1?'':'s'} remaining.\n\nReview your spells — don't hesitate next time!`,
+      '⚡',
+      ()=>{
+        btLocked=false;
+        if(isRoundDone){ setTimeout(()=>roundComplete(),400); }
+        else{ setTimeout(()=>doStep(),500); }
+      }
+    );
+  });
+}
+
+// ── Round complete ──
+function roundComplete(){
+  stopTimer();
+  document.getElementById('pick-section').style.display='none';
+  VOLD_ROUNDS[btRound].voldSeq.forEach((_,i)=>{
+    const c=document.getElementById(`vc-${i}`); if(c) c.className='dc v-revealed';
+  });
+
+  showRoundBadge('✨ SPELL BLOCKED!');
+  setBtLog(`🌟 ${VOLD_ROUNDS[btRound].voldSpellName} has been countered!`,'good');
+  sndOk();
+  for(let i=0;i<8;i++) setTimeout(()=>spawnParticle(['✨','⭐','💫'][i%3]),i*65);
+
+  // Lose one HP segment per round
+  voldHP=Math.max(0,voldHP-1);
+  setTimeout(()=>animateVoldHPLoss(),400);
+
+  const isLastRound=(btRound===VOLD_ROUNDS.length-1);
+  btRound++;
+
+  // Escalate music for new tier
+  if(btRound<VOLD_ROUNDS.length){
+    const nextTier=VOLD_ROUNDS[btRound].tier;
+    if(nextTier!==VOLD_ROUNDS[btRound-1].tier){
+      setTimeout(()=>escalateMusicTier(nextTier),800);
+    }
+  }
+
+  if(isLastRound){
+    // Final round blocked — Voldemort dies!
+    setTimeout(()=>endBattle(true),1200);
+    return;
+  }
+
+  // Between rounds — show pause modal with spellbook
+  setTimeout(()=>{
+    const nextRound=VOLD_ROUNDS[btRound];
+    const tierChanged=nextRound.tier!==VOLD_ROUNDS[btRound-1].tier;
+    const modalTitle = tierChanged
+      ? `⚠️ Voldemort grows stronger!`
+      : `✨ Round ${btRound} of 5 Cleared!`;
+    const modalDesc = tierChanged
+      ? `You've blocked his easy spells — but he's just warming up.\nReview your stronger spells carefully before the next attack!`
+      : `${VOLD_ROUNDS[btRound-1].voldSpellName} has been countered!\nReview your spells — Voldemort still has ${voldHP} shields remaining!`;
+
+    showPauseModal(
+      'round', modalTitle, modalDesc, tierChanged?'⚡':'📖',
+      ()=>{ btVoldStep=0; btPlayerStep=0; btLocked=false; startRound(); }
+    );
+  },1100);
+}
+
+function showRoundBadge(text){
+  const b=document.getElementById('round-badge');
+  b.textContent=text; b.className='round-badge win-badge';
+  void b.offsetWidth;
+  b.classList.add('show');
+  setTimeout(()=>b.className='round-badge',950);
+}
+
+// ── Flash sprites ──
+function flashSprite(id, isHero){
+  const el=document.getElementById(id); if(!el)return;
+  el.classList.add(isHero?'flash-good':'flash-hit');
+  setTimeout(()=>el.classList.remove('flash-good','flash-hit'),450);
+}
+
+// ── Projectile animation ──
+function fireProjectile(emoji, from, onDone){
+  const heroEl=document.getElementById('bt-hero'), voldEl=document.getElementById('bt-vold');
+  if(!heroEl||!voldEl){onDone();return;}
+  const fEl=from==='hero'?heroEl:voldEl, tEl=from==='hero'?voldEl:heroEl;
+  const fR=fEl.getBoundingClientRect(), tR=tEl.getBoundingClientRect();
+  const sx=fR.left+fR.width/2, sy=fR.top+fR.height/2;
+  const ex=tR.left+tR.width/2, ey=tR.top+tR.height/2;
+  const p=document.createElement('div'); p.className='proj'; p.textContent=emoji;
+  p.style.cssText=`left:${sx}px;top:${sy}px;transform:translate(-50%,-50%);`;
+  document.body.appendChild(p);
+  const dur=520, t0=performance.now();
+  (function step(now){
+    const t=Math.min(1,(now-t0)/dur);
+    const e=t<.5?2*t*t:-1+(4-2*t)*t;
+    p.style.left=(sx+(ex-sx)*e)+'px';
+    p.style.top=(sy+(ey-sy)*e-Math.sin(t*Math.PI)*65)+'px';
+    p.style.transform=`translate(-50%,-50%) scale(${1+t*.6}) rotate(${t*360}deg)`;
+    if(t<1) requestAnimationFrame(step);
+    else{p.remove();onDone();}
+  })(t0);
+}
+
+function setBtLog(msg,cls){
+  const el=document.getElementById('bt-log');
+  el.textContent=msg; el.className=`bt-log ${cls}`;
+}
+
+// ── End Battle ──
+function endBattle(won){
+  stopTimer();
+  stopMusic();
+  document.getElementById('pick-section').style.display='none';
+  if(won){
+    sndVictory();
+    for(let i=0;i<28;i++){
+      setTimeout(()=>{
+        const p=document.createElement('div'); p.className='particle';
+        p.textContent=['🏆','⭐','✨','🎊','🎉','🪄'][Math.floor(Math.random()*6)];
+        p.style.cssText=`left:${5+Math.random()*90}%;top:${5+Math.random()*90}%;--px:${(Math.random()-.5)*200}px;--py:${-Math.random()*200}px;--pd:1.5s;font-size:2rem;`;
+        document.body.appendChild(p); setTimeout(()=>p.remove(),1600);
+      },i*70);
+    }
+    setTimeout(()=>{
+      document.getElementById('battle-screen').style.display='none';
+      document.getElementById('win-screen').style.display='flex';
+    },900);
+  }else{
+    sndFail();
+    setTimeout(()=>{
+      document.getElementById('battle-screen').style.display='none';
+      document.getElementById('defeat-screen').style.display='flex';
+    },700);
+  }
+}
+
+// ════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════
+createStars();
+</script>
+</body>
+</html>
